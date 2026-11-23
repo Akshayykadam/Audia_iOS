@@ -131,39 +131,6 @@ actor PersonalizationService {
         }
     }
 
-    func buildForgottenFavorites() async -> HomeSection {
-        guard let songs = try? await db.fetchForgottenFavorites(days: 60, limit: 10), !songs.isEmpty else {
-            return .forgottenFavorites(items: [])
-        }
-        let initialItems = songs.toSongItems().map(YTItem.song)
-        let section = HomeSection.forgottenFavorites(items: initialItems)
-        let task = Task { [weak self] in
-            guard let self else { return }
-            await self.enrichForgottenFavorites()
-        }
-        recordEnrichment(task)
-        return section
-    }
-
-    private func enrichForgottenFavorites() async {
-        guard let songs = try? await db.fetchForgottenFavorites(days: 60, limit: 10) else { return }
-        let toEnrich = songs.filter { $0.title.isEmpty }.prefix(3)
-        guard !toEnrich.isEmpty else { return }
-        var didEnrich = false
-        for entity in toEnrich {
-            guard let metadata = try? await fetchSongMetadata(videoId: entity.id),
-                  !metadata.title.isEmpty else { continue }
-            let enriched = SongEntity(sync: SyncSong.merging(entity.toSync(), with: metadata))
-            try? await db.save(enriched)
-            didEnrich = true
-        }
-        if didEnrich {
-            await MainActor.run {
-                NotificationCenter.default.post(name: .personalizationDataUpdated, object: nil)
-            }
-        }
-    }
-
     // MARK: - Phase 2: API-based sections (load in background)
 
     func buildAccountPlaylists() async -> HomeSection {

@@ -62,28 +62,20 @@ final class HomeViewModel {
                 ? await personalization.buildQuickPicks(limit: max(settings.topListsLength, 16))
                 : .quickPicks(items: [])
             async let kl: HomeSection = await personalization.buildKeepListening()
-            async let ff: HomeSection = await personalization.buildForgottenFavorites()
-            let (qpResult, klResult, ffResult) = await (qp, kl, ff)
+            let (qpResult, klResult) = await (qp, kl)
             var local: [HomeSection] = []
             if !qpResult.items.isEmpty { local.append(qpResult) }
             if !klResult.items.isEmpty { local.append(klResult) }
-            if !ffResult.items.isEmpty { local.append(ffResult) }
             self.cachedLocalSections = local
             self.mergeSections()
             await self.personalization.drainEnrichments()
-            let refreshed = await (
-                self.personalization.buildForgottenFavorites(),
-                self.personalization.buildKeepListening()
-            )
+            let refreshed = await self.personalization.buildKeepListening()
             var merged = local
             merged.removeAll { section in
-                switch section {
-                case .forgottenFavorites, .keepListening: return true
-                default: return false
-                }
+                if case .keepListening = section { return true }
+                return false
             }
-            if !refreshed.0.items.isEmpty { merged.append(refreshed.0) }
-            if !refreshed.1.items.isEmpty { merged.append(refreshed.1) }
+            if !refreshed.items.isEmpty { merged.append(refreshed) }
             self.cachedLocalSections = merged
             self.mergeSections()
         }
@@ -197,14 +189,12 @@ final class HomeViewModel {
             ? personalization.buildQuickPicks(limit: max(settings.topListsLength, 16))
             : .quickPicks(items: [])
         async let kl: HomeSection = personalization.buildKeepListening()
-        async let ff: HomeSection = personalization.buildForgottenFavorites()
 
-        let (qpResult, klResult, ffResult) = await (qp, kl, ff)
+        let (qpResult, klResult) = await (qp, kl)
 
         var local: [HomeSection] = []
         if !qpResult.items.isEmpty { local.append(qpResult) }
         if !klResult.items.isEmpty { local.append(klResult) }
-        if !ffResult.items.isEmpty { local.append(ffResult) }
         cachedLocalSections = local
     }
 
@@ -319,9 +309,6 @@ final class HomeViewModel {
         if title.contains("listen again") || title.contains("keep listening") {
             return .keepListening(items: section.items)
         }
-        if title.contains("forgotten") || title.contains("favorite") {
-            return .forgottenFavorites(items: section.items)
-        }
         return .homePageSection(section, index: index)
     }
 
@@ -335,6 +322,9 @@ final class HomeViewModel {
                 return nil
             }
             if title.contains("song mix") || title.contains("song mixes") || title.contains("mixed for you") || title.contains("为你混配") {
+                return nil
+            }
+            if title.contains("forgotten") {
                 return nil
             }
             if case .fromTheCommunity = section {
@@ -410,10 +400,10 @@ final class HomeViewModel {
                 }
             }
 
-            // 2. Also collect from current ordered sections (NEVER steal from Keep Listening or Forgotten Favorites!)
+            // 2. Also collect from current ordered sections (NEVER steal from Keep Listening!)
             for sec in ordered {
                 switch sec {
-                case .keepListening, .forgottenFavorites:
+                case .keepListening:
                     continue
                 default:
                     break
@@ -440,10 +430,10 @@ final class HomeViewModel {
 
             // Deduplicate: if downstream sections had their songs borrowed into Quick Picks,
             // remove those duplicate tracks so songs don't repeat immediately.
-            // DO NOT modify or drop Keep Listening or Forgotten Favorites!
+            // DO NOT modify or drop Keep Listening!
             ordered = ordered.compactMap { section in
                 switch section {
-                case .keepListening, .forgottenFavorites:
+                case .keepListening:
                     return section
                 default:
                     break
@@ -473,8 +463,6 @@ final class HomeViewModel {
             return .quickPicks(items: items)
         case .keepListening:
             return .keepListening(items: items)
-        case .forgottenFavorites:
-            return .forgottenFavorites(items: items)
         case .homePageSection(var s, let index):
             s.items = items
             return .homePageSection(s, index: index)
@@ -515,7 +503,6 @@ final class HomeViewModel {
         switch section {
         case .quickPicks: return .quickPicks(items: filteredItems)
         case .keepListening: return .keepListening(items: filteredItems)
-        case .forgottenFavorites: return .forgottenFavorites(items: filteredItems)
         case .homePageSection(let sectionData, let index):
             if SettingsStore.shared.audioOnlyMode && sectionData.title.localizedCaseInsensitiveContains("video") {
                 return .quickPicks(items: [])
@@ -555,7 +542,6 @@ final class HomeViewModel {
             }
             return 400 - index
         case .keepListening: return 800
-        case .forgottenFavorites: return 600
         case .dailyDiscover: return 500
         case .similarRecommendation: return 350
         case .accountPlaylists: return 300

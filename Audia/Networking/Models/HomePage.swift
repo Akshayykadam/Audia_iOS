@@ -62,7 +62,6 @@ struct MoodItem: Identifiable, Hashable {
 enum HomeSection: Identifiable {
     case quickPicks(items: [YTItem])
     case keepListening(items: [YTItem])
-    case forgottenFavorites(items: [YTItem])
     case homePageSection(HomePage.Section, index: Int)
     case accountPlaylists(items: [YTItem])
     case similarRecommendation(items: [YTItem], title: String)
@@ -75,7 +74,6 @@ enum HomeSection: Identifiable {
         switch self {
         case .quickPicks: return "quick_picks"
         case .keepListening: return "keep_listening"
-        case .forgottenFavorites: return "forgotten_favorites"
         case .homePageSection(_, let index): return "homepage_\(index)"
         case .accountPlaylists: return "account_playlists"
         case .similarRecommendation(_, let title): return "similar_\(title)"
@@ -90,7 +88,6 @@ enum HomeSection: Identifiable {
         switch self {
         case .quickPicks: return "Quick Picks"
         case .keepListening: return "Keep Listening"
-        case .forgottenFavorites: return "Forgotten Favorites"
         case .homePageSection(let section, _): return section.title
         case .accountPlaylists: return "Your Playlists"
         case .similarRecommendation(_, let title): return title
@@ -105,7 +102,6 @@ enum HomeSection: Identifiable {
         switch self {
         case .quickPicks(let items): return items
         case .keepListening(let items): return items
-        case .forgottenFavorites(let items): return items
         case .homePageSection(let section, _): return section.items
         case .accountPlaylists(let items): return items
         case .similarRecommendation(let items, _): return items
@@ -118,7 +114,7 @@ enum HomeSection: Identifiable {
 
     var isSongsOnly: Bool {
         switch self {
-        case .quickPicks, .forgottenFavorites, .dailyDiscover: return true
+        case .quickPicks, .dailyDiscover: return true
         case .similarRecommendation: return true
         case .homePageSection(let section, _): return section.isSongsOnly
         case .keepListening, .accountPlaylists, .fromTheCommunity, .speedDial, .moodAndGenres: return false

@@ -70,6 +70,26 @@ struct SearchView: View {
     /// Search field + sort menu pinned above the filter chips.
     private var searchTopBar: some View {
         HStack(spacing: 10) {
+            Button {
+                fieldFocused = false
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                if !router.searchPath.isEmpty {
+                    router.searchPath.removeLast()
+                } else if !viewModel.fieldText.isEmpty {
+                    viewModel.fieldText = ""
+                } else {
+                    router.selectedTabIndex = 0
+                }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.satoshi(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.12), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(AudiaTheme.textSecondary)
@@ -298,6 +318,7 @@ struct SearchView: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.automatic)
+        .scrollDismissesKeyboard(.immediately)
         .miniPlayerTracksScroll()
     }
 
@@ -391,6 +412,7 @@ struct SearchView: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.automatic)
+        .scrollDismissesKeyboard(.immediately)
         .miniPlayerTracksScroll()
     }
 
@@ -459,6 +481,7 @@ struct SearchView: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.automatic)
+        .scrollDismissesKeyboard(.immediately)
         .miniPlayerTracksScroll()
     }
 

@@ -123,8 +123,6 @@ struct HomeScreenView: View {
             quickPicksSection(section)
         case .keepListening:
             mixedSection(section)
-        case .forgottenFavorites:
-            songsSection(section)
         case .homePageSection(let sectionData, _):
             if sectionData.isSongsOnly {
                 songsSection(section)
