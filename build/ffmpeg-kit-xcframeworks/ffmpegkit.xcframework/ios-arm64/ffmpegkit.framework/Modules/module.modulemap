@@ -1,0 +1,5 @@
+framework module ffmpegkit {
+    umbrella header "ffmpegkit.h"
+    export *
+    module * { export * }
+}

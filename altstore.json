@@ -1,0 +1,39 @@
+{
+  "name": "Audia",
+  "subtitle": "YouTube Music client for iOS",
+  "description": "Free and open source YouTube Music client. Stable releases from GitHub — unsigned IPAs that Feather, AltStore, or SideStore re-sign with your Apple ID.",
+  "iconURL": "https://raw.githubusercontent.com/Akshayykadam/Audia_iOS/main/.github/assets/icon.png",
+  "website": "https://github.com/Akshayykadam/Audia_iOS",
+  "tintColor": "#007AFF",
+  "featuredApps": [
+    "com.akshayysk.Audia"
+  ],
+  "apps": [
+    {
+      "name": "Audia",
+      "bundleIdentifier": "com.akshayysk.Audia",
+      "developerName": "Akshayykadam",
+      "subtitle": "YouTube Music client for iOS",
+      "localizedDescription": "A free and open source YouTube Music client for iOS.\n\n• No ads\n• Stream songs and videos from YouTube Music\n• Hardware-accelerated video mode\n• Background playback with lock screen controls\n• 10-band equalizer & audio normalization\n• Spotify & YouTube Music playlist import\n• Persistent queue & playback history\n• Library sync (playlists, albums, artists, podcasts, liked songs)\n• Offline downloads & auto-downloads\n• AMOLED dark UI with custom accent colors\n\nRequires iOS 16.0 or later and a YouTube Music account.",
+      "iconURL": "https://raw.githubusercontent.com/Akshayykadam/Audia_iOS/main/.github/assets/icon.png",
+      "tintColor": "#007AFF",
+      "category": "entertainment",
+      "screenshotURLs": [
+        "https://raw.githubusercontent.com/Akshayykadam/Audia_iOS/main/.github/assets/1.jpg",
+        "https://raw.githubusercontent.com/Akshayykadam/Audia_iOS/main/.github/assets/2.jpg",
+        "https://raw.githubusercontent.com/Akshayykadam/Audia_iOS/main/.github/assets/3.jpg"
+      ],
+      "versions": [
+        {
+          "version": "0.0.1",
+          "buildVersion": "1",
+          "date": "2026-11-24T00:00:00Z",
+          "localizedDescription": "Initial release\n\n[Discord](https://discord.gg/QrMwZAfU97)",
+          "downloadURL": "https://github.com/Akshayykadam/Audia_iOS/releases/download/v0.0.1/Audia.ipa",
+          "size": 35924605,
+          "minOSVersion": "26.0"
+        }
+      ]
+    }
+  ]
+}
