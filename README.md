@@ -1,8 +1,8 @@
 # Audia
 
-A high-performance, AMOLED-optimized YouTube Music client for iOS built with SwiftUI and powered by `libmpv`.
+A high-performance, optimized YouTube Music client for iOS built with SwiftUI.
 
-Audia is designed for smooth, battery-efficient, and ad-free music and video streaming. It offers deep YouTube Music account synchronization, hardware-accelerated video playback, a built-in 10-band equalizer, offline downloads, and seamless Spotify playlist importing.
+Audia is designed for smooth, battery-efficient, and ad-free music and video streaming. It offers deep YouTube Music account synchronization, hardware-accelerated video playback, a built-in 10-band equalizer, offline downloads, and seamless Spotify & Youtube Music playlist importing.
 
 ---
 
