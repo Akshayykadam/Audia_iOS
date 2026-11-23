@@ -15,33 +15,76 @@ actor PersonalizationService {
     // MARK: - Phase 1: Local sections (fast, load immediately)
 
     func buildQuickPicks(limit: Int = 16) async -> HomeSection {
-        var picked: [SongEntity] = []
-        var seenIds = Set<String>()
-        if let songs = try? await db.fetchLikedSongs(), !songs.isEmpty {
-            for song in songs.shuffled() {
-                if seenIds.insert(song.id).inserted {
-                    picked.append(song)
-                }
-            }
-        }
         let target = max(limit, 16)
-        if picked.count < target, let recents = try? await db.fetchRecentSongs(days: 30, limit: 30) {
-            for song in recents {
-                if seenIds.insert(song.id).inserted {
-                    picked.append(song)
-                    if picked.count >= target { break }
+        var pickedItems: [YTItem] = []
+        var seenIds = Set<String>()
+
+        // 1. Gather user interest seeds: Liked songs + Top played songs
+        let likedSongs = (try? await db.fetchLikedSongs()) ?? []
+        let topSongs = (try? await db.fetchTopSongs(limit: 25)) ?? []
+        let recentSongs = (try? await db.fetchRecentSongs(days: 30, limit: 20)) ?? []
+
+        // Seed tracks that reflect true user taste (prioritizing liked & top played)
+        var seedSongs: [SongEntity] = []
+        var seedIds = Set<String>()
+        for song in (likedSongs + topSongs) {
+            if seedIds.insert(song.id).inserted {
+                seedSongs.append(song)
+            }
+        }
+
+        // If user has no liked/top songs yet, use recent songs (shuffled) as seeds
+        if seedSongs.isEmpty && !recentSongs.isEmpty {
+            seedSongs = recentSongs.shuffled()
+        }
+
+        // 2. Discover songs based on user interest using radio recommendations
+        if !seedSongs.isEmpty {
+            let seeds = seedSongs.shuffled().prefix(2)
+            for seed in seeds {
+                guard pickedItems.count < target else { break }
+                if let radio = try? await fetchRadio(videoId: seed.id), !radio.songs.isEmpty {
+                    for song in radio.songs {
+                        if seenIds.insert(song.videoId).inserted {
+                            pickedItems.append(.song(song))
+                            if pickedItems.count >= target { break }
+                        }
+                    }
                 }
             }
         }
-        guard !picked.isEmpty else {
+
+        // 3. Blend in user's favorite / top songs
+        if pickedItems.count < target && !seedSongs.isEmpty {
+            for song in seedSongs.shuffled() {
+                if seenIds.insert(song.id).inserted {
+                    pickedItems.append(.song(SongItem(entity: song)))
+                    if pickedItems.count >= target { break }
+                }
+            }
+        }
+
+        // 4. Fallback if still under target (e.g. offline and no radio):
+        if pickedItems.count < target && !recentSongs.isEmpty {
+            // Shuffle so the single last-played song is not fixed at index 0 (Keep Listening already features it)
+            for song in recentSongs.shuffled() {
+                if seenIds.insert(song.id).inserted {
+                    pickedItems.append(.song(SongItem(entity: song)))
+                    if pickedItems.count >= target { break }
+                }
+            }
+        }
+
+        guard !pickedItems.isEmpty else {
             return .quickPicks(items: [])
         }
-        let chosen = Array(picked.prefix(target))
-        let initialItems = chosen.toSongItems().map(YTItem.song)
-        let section = HomeSection.quickPicks(items: Array(initialItems))
+
+        let chosen = Array(pickedItems.prefix(target))
+        let section = HomeSection.quickPicks(items: chosen)
+        let entitiesToEnrich = seedSongs.prefix(target)
         let task = Task { [weak self] in
             guard let self else { return }
-            await self.enrichLikedSongs(songs: chosen)
+            await self.enrichLikedSongs(songs: Array(entitiesToEnrich))
         }
         recordEnrichment(task)
         return section
@@ -51,21 +94,21 @@ actor PersonalizationService {
         var items: [YTItem] = []
         var recentSongs: [SongEntity] = []
 
-        if let fetched = try? await db.fetchRecentSongs(days: 30, limit: 6) {
+        if let fetched = try? await db.fetchRecentSongs(days: 30, limit: 8) {
             recentSongs = fetched
             for song in fetched where items.count < 8 {
                 items.append(.song(SongItem(entity: song)))
             }
         }
 
-        if let albums = try? await db.fetchAlbums(limit: 4) {
-            for album in albums where items.count < 12 {
+        if let albums = try? await db.fetchAlbums(limit: 5) {
+            for album in albums where items.count < 14 {
                 items.append(.album(AlbumItem(entity: album)))
             }
         }
 
-        if let artists = try? await db.fetchArtists(limit: 4) {
-            for artist in artists where items.count < 16 {
+        if let artists = try? await db.fetchArtists(limit: 5) {
+            for artist in artists where items.count < 20 {
                 items.append(.artist(ArtistItem(entity: artist)))
             }
         }

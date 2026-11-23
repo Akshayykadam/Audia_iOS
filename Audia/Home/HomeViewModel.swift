@@ -356,7 +356,12 @@ final class HomeViewModel {
         var byId: [String: HomeSection] = [:]
         for section in filtered {
             if let existing = byId[section.id] {
-                if section.items.count > existing.items.count {
+                // If section is quickPicks and existing is local, prefer server section if it has items
+                if case .quickPicks = section, case .quickPicks = existing {
+                    if !section.items.isEmpty {
+                        byId[section.id] = section
+                    }
+                } else if section.items.count > existing.items.count {
                     byId[section.id] = section
                 }
             } else {
@@ -405,8 +410,14 @@ final class HomeViewModel {
                 }
             }
 
-            // 2. Also collect from current ordered sections
+            // 2. Also collect from current ordered sections (NEVER steal from Keep Listening or Forgotten Favorites!)
             for sec in ordered {
+                switch sec {
+                case .keepListening, .forgottenFavorites:
+                    continue
+                default:
+                    break
+                }
                 for item in sec.items {
                     if case .song(let s) = item, !seenIds.contains(s.videoId) {
                         seenIds.insert(s.videoId)
@@ -429,8 +440,14 @@ final class HomeViewModel {
 
             // Deduplicate: if downstream sections had their songs borrowed into Quick Picks,
             // remove those duplicate tracks so songs don't repeat immediately.
-            // If a section is now empty or lost its distinct tracks, remove it.
+            // DO NOT modify or drop Keep Listening or Forgotten Favorites!
             ordered = ordered.compactMap { section in
+                switch section {
+                case .keepListening, .forgottenFavorites:
+                    return section
+                default:
+                    break
+                }
                 let remainingItems = section.items.filter { item in
                     if case .song(let s) = item {
                         return !qpSongIds.contains(s.videoId)

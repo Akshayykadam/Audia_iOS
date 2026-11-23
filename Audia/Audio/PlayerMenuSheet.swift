@@ -5,6 +5,7 @@
 
 import SwiftUI
 import Foundation
+import Combine
 import AVFoundation
 import MediaPlayer
 
@@ -116,29 +117,26 @@ struct PlayerMenuSheet: View {
 
     private var volumeCard: some View {
         HStack(spacing: 12) {
-            Image(systemName: volumeIconName)
-                .font(.satoshi(.callout))
-                .foregroundStyle(settings.accentColor)
-                .frame(width: 24)
+            Button {
+                volumeObserver.toggleMute()
+            } label: {
+                Image(systemName: volumeIconName)
+                    .font(.satoshi(.callout))
+                    .foregroundStyle(settings.accentColor)
+                    .frame(width: 24)
+            }
+            .buttonStyle(.plain)
 
-            VolumeSlider(
-                value: Binding(
-                    get: { settings.playerVolume },
-                    set: { newValue in
-                        settings.playerVolume = newValue.clamped01
-                        PlayerController.shared.applyPlayerVolume()
-                    }
-                ),
-                accentColor: settings.accentColor
-            )
-            .accessibilityLabel("App volume")
+            SystemVolumeSlider(volumeObserver: volumeObserver)
+                .frame(height: 32)
+                .accessibilityLabel("System volume")
         }
         .padding(16)
         .background(cardBackground)
     }
 
     private var volumeIconName: String {
-        switch settings.playerVolume {
+        switch volumeObserver.volume {
         case ..<0.01: return "speaker.slash.fill"
         case ..<0.34: return "speaker.wave.1.fill"
         case ..<0.67: return "speaker.wave.2.fill"
@@ -661,50 +659,107 @@ struct SongDetailsView: View {
     }
 }
 
-// MARK: - Volume Slider 
+// MARK: - System Volume Controls
 
-/// Sleek modern sound slider with slim track and smooth thumb
-private struct VolumeSlider: View {
-    @Binding var value: Double
-    let accentColor: Color
+@MainActor
+final class SystemVolumeObserver: ObservableObject {
+    @Published var volume: Float = AVAudioSession.sharedInstance().outputVolume
+    private var observation: NSKeyValueObservation?
+    weak var activeSlider: UISlider?
+    private var lastNonZeroVolume: Float = 0.5
 
-    var body: some View {
-        GeometryReader { geo in
-            let width = max(0, geo.size.width)
-            let thumbDiameter: CGFloat = 18
-            let trackHeight: CGFloat = 6
-            let usableWidth = max(0, width - thumbDiameter)
-            let clampedValue = CGFloat(value.clamped01)
-            let thumbX = clampedValue * usableWidth
-
-            ZStack(alignment: .leading) {
-                // Background track
-                Capsule()
-                    .fill(AudiaTheme.surfaceBorder)
-                    .frame(height: trackHeight)
-
-                // Active fill
-                Capsule()
-                    .fill(Color.white)
-                    .frame(width: thumbX + thumbDiameter / 2, height: trackHeight)
-
-                // Slick circular thumb
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: thumbDiameter, height: thumbDiameter)
-                    .shadow(color: Color.black.opacity(0.4), radius: 3, y: 1.5)
-                    .offset(x: thumbX)
+    init() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setActive(true)
+        self.volume = session.outputVolume
+        self.observation = session.observe(\.outputVolume, options: [.new]) { [weak self] audioSession, _ in
+            let newVolume = audioSession.outputVolume
+            DispatchQueue.main.async {
+                self?.volume = newVolume
             }
-            .frame(height: geo.size.height, alignment: .center)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        let newValue = (gesture.location.x - thumbDiameter / 2) / usableWidth
-                        value = Double(newValue).clamped01
-                    }
-            )
         }
-        .frame(height: 32)
+    }
+
+    deinit {
+        observation?.invalidate()
+    }
+
+    func toggleMute() {
+        guard let slider = activeSlider else { return }
+        if slider.value > 0.01 {
+            lastNonZeroVolume = slider.value
+            slider.setValue(0, animated: false)
+            slider.sendActions(for: .valueChanged)
+        } else {
+            let restoreVal = lastNonZeroVolume > 0.05 ? lastNonZeroVolume : 0.5
+            slider.setValue(restoreVal, animated: false)
+            slider.sendActions(for: .valueChanged)
+        }
+    }
+}
+
+private struct SystemVolumeSlider: UIViewRepresentable {
+    @ObservedObject var volumeObserver: SystemVolumeObserver
+
+    func makeUIView(context: Context) -> CustomMPVolumeView {
+        let volumeView = CustomMPVolumeView(frame: .zero)
+        volumeView.showsRouteButton = false
+        volumeView.showsVolumeSlider = true
+
+        let trackHeight: CGFloat = 6
+        let thumbDiameter: CGFloat = 18
+
+        let minTrack = makeCapsuleImage(color: .white, height: trackHeight)
+        let maxTrack = makeCapsuleImage(color: UIColor(white: 0.22, alpha: 1.0), height: trackHeight)
+        let thumb = makeCircleImage(color: .white, size: thumbDiameter)
+
+        volumeView.setMinimumVolumeSliderImage(minTrack, for: .normal)
+        volumeView.setMaximumVolumeSliderImage(maxTrack, for: .normal)
+        volumeView.setVolumeThumbImage(thumb, for: .normal)
+        volumeView.setVolumeThumbImage(thumb, for: .highlighted)
+
+        volumeView.onSliderFound = { [weak volumeObserver] slider in
+            volumeObserver?.activeSlider = slider
+            slider.minimumTrackTintColor = .white
+            slider.maximumTrackTintColor = UIColor(white: 0.22, alpha: 1.0)
+            slider.thumbTintColor = .white
+        }
+
+        return volumeView
+    }
+
+    func updateUIView(_ uiView: CustomMPVolumeView, context: Context) {}
+
+    private func makeCapsuleImage(color: UIColor, height: CGFloat) -> UIImage {
+        let cornerRadius = height / 2.0
+        let width = height * 2
+        let size = CGSize(width: width, height: height)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { _ in
+            color.setFill()
+            let path = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: cornerRadius)
+            path.fill()
+        }
+        return image.resizableImage(withCapInsets: UIEdgeInsets(top: 0, left: cornerRadius, bottom: 0, right: cornerRadius), resizingMode: .stretch)
+    }
+
+    private func makeCircleImage(color: UIColor, size: CGFloat) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+        return renderer.image { _ in
+            color.setFill()
+            let path = UIBezierPath(ovalIn: CGRect(origin: .zero, size: CGSize(width: size, height: size)))
+            path.fill()
+        }
+    }
+}
+
+final class CustomMPVolumeView: MPVolumeView {
+    var onSliderFound: ((UISlider) -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if let slider = subviews.first(where: { $0 is UISlider }) as? UISlider {
+            onSliderFound?(slider)
+        }
     }
 }
