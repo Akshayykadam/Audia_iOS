@@ -8,9 +8,6 @@ Designed for people who love music and care about the listening experience. Audi
 
 No unnecessary clutter. No annoying ads. Just you and your music.
 
-<p align="center">
-  <strong>🎵 Ad-Free · ⚡ High Performance · 🎨 Beautifully Designed · 🔒 Privacy First</strong>
-</p>
 
 ---
 
