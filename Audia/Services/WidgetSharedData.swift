@@ -9,6 +9,9 @@ import WidgetKit
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(Security)
+import Security
+#endif
 
 // MARK: - Playback State Model
 
@@ -168,6 +171,100 @@ public enum AudiaWidgetTheme {
     }
 }
 
+// MARK: - Bulletproof Shared Keychain Store for Physical Hardware
+
+public enum WidgetKeychainStore {
+    public static let accessGroup = "A3XSATPZS9.com.akshayysk.Audia"
+    public static let service = "com.akshayysk.Audia.widget"
+
+    public static func save(key: String, data: Data) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service,
+            kSecAttrAccessGroup as String: accessGroup,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+        ]
+
+        // 1. Delete any existing item without accessibility attribute
+        let delQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service,
+            kSecAttrAccessGroup as String: accessGroup
+        ]
+        SecItemDelete(delQuery as CFDictionary)
+
+        // 2. Add with explicit access group
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+
+        // 3. Fallback: if adding with explicit access group failed (e.g. simulator), add without access group
+        if status != errSecSuccess {
+            let fallbackDelQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: key,
+                kSecAttrService as String: service
+            ]
+            SecItemDelete(fallbackDelQuery as CFDictionary)
+
+            var fallbackAddQuery = fallbackDelQuery
+            fallbackAddQuery[kSecValueData as String] = data
+            fallbackAddQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+            _ = SecItemAdd(fallbackAddQuery as CFDictionary, nil)
+        }
+    }
+
+    public static func load(key: String) -> Data? {
+        // 1. Try with explicit access group
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service,
+            kSecAttrAccessGroup as String: accessGroup,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var item: CFTypeRef?
+        var status = SecItemCopyMatching(query as CFDictionary, &item)
+
+        // 2. Fallback: try without explicit access group (e.g. simulator)
+        if status != errSecSuccess {
+            let fallbackQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: key,
+                kSecAttrService as String: service,
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne
+            ]
+            status = SecItemCopyMatching(fallbackQuery as CFDictionary, &item)
+        }
+
+        if status == errSecSuccess, let data = item as? Data {
+            return data
+        }
+        return nil
+    }
+
+    public static func delete(key: String) {
+        let delQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service,
+            kSecAttrAccessGroup as String: accessGroup
+        ]
+        SecItemDelete(delQuery as CFDictionary)
+
+        let fallbackDelQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service
+        ]
+        SecItemDelete(fallbackDelQuery as CFDictionary)
+    }
+}
+
 // MARK: - Shared Data Store
 
 public final class WidgetDataStore {
@@ -242,19 +339,37 @@ public final class WidgetDataStore {
     public func readPlaybackState() -> WidgetPlaybackState {
         // 1. Check primary shared container JSON
         if let data = try? Data(contentsOf: playbackStateFileURL),
-           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data) {
+           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data),
+           !state.videoId.isEmpty && state.videoId != "sample" {
             return state
         }
         #if targetEnvironment(simulator)
         // 2. Check universal simulator fallback
         let tempFile = URL(fileURLWithPath: "/tmp/audia_shared_widget/widget_playback_state.json")
         if let data = try? Data(contentsOf: tempFile),
-           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data) {
+           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data),
+           !state.videoId.isEmpty && state.videoId != "sample" {
             return state
         }
         #endif
-        // 3. Fall back to UserDefaults
+        // 3. Check shared Keychain (vital for physical devices signed without App Groups)
+        if let data = WidgetKeychainStore.load(key: Self.playbackKey),
+           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data),
+           !state.videoId.isEmpty && state.videoId != "sample" {
+            return state
+        }
+        // 4. Fall back to UserDefaults
         if let data = defaults.data(forKey: Self.playbackKey),
+           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data),
+           !state.videoId.isEmpty && state.videoId != "sample" {
+            return state
+        }
+        // 5. If everything returned empty/placeholder, check if Keychain has anything stored
+        if let data = WidgetKeychainStore.load(key: Self.playbackKey),
+           let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data) {
+            return state
+        }
+        if let data = try? Data(contentsOf: playbackStateFileURL),
            let state = try? JSONDecoder().decode(WidgetPlaybackState.self, from: data) {
             return state
         }
@@ -270,6 +385,8 @@ public final class WidgetDataStore {
             let tempFile = URL(fileURLWithPath: "/tmp/audia_shared_widget/widget_playback_state.json")
             try? data.write(to: tempFile, options: .atomic)
             #endif
+            // Write to shared Keychain for physical hardware
+            WidgetKeychainStore.save(key: Self.playbackKey, data: data)
         }
     }
 
@@ -278,20 +395,29 @@ public final class WidgetDataStore {
     public func readRecentItems() -> [WidgetRecentItem] {
         // 1. Check primary shared container JSON
         if let data = try? Data(contentsOf: recentItemsFileURL),
-           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data) {
+           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data),
+           !items.isEmpty {
             return items
         }
         #if targetEnvironment(simulator)
         // 2. Check universal simulator fallback
         let tempFile = URL(fileURLWithPath: "/tmp/audia_shared_widget/widget_recent_items.json")
         if let data = try? Data(contentsOf: tempFile),
-           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data) {
+           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data),
+           !items.isEmpty {
             return items
         }
         #endif
-        // 3. Fall back to UserDefaults
+        // 3. Check shared Keychain (vital for physical devices)
+        if let data = WidgetKeychainStore.load(key: Self.recentsKey),
+           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data),
+           !items.isEmpty {
+            return items
+        }
+        // 4. Fall back to UserDefaults
         if let data = defaults.data(forKey: Self.recentsKey),
-           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data) {
+           let items = try? JSONDecoder().decode([WidgetRecentItem].self, from: data),
+           !items.isEmpty {
             return items
         }
         return []
@@ -306,6 +432,8 @@ public final class WidgetDataStore {
             let tempFile = URL(fileURLWithPath: "/tmp/audia_shared_widget/widget_recent_items.json")
             try? data.write(to: tempFile, options: .atomic)
             #endif
+            // Write to shared Keychain for physical hardware
+            WidgetKeychainStore.save(key: Self.recentsKey, data: data)
         }
     }
 
@@ -334,29 +462,52 @@ public final class WidgetDataStore {
             try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             try? jpegData.write(to: tempDir.appendingPathComponent(fileName), options: .atomic)
             #endif
+            // Write to shared Keychain for physical hardware
+            let cleanId = videoId.replacingOccurrences(of: ".jpg", with: "")
+            WidgetKeychainStore.save(key: "audia_art_\(cleanId)", data: jpegData)
+            WidgetKeychainStore.save(key: "audia_art_current", data: jpegData)
             return fileName
         }
         return nil
     }
 
     public func loadArtwork(fileName: String?) -> UIImage? {
-        guard let fileName, !fileName.isEmpty else { return nil }
-        let fileURL = artworkDirectory.appendingPathComponent(fileName)
-        var sourceImage: UIImage?
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            sourceImage = UIImage(contentsOfFile: fileURL.path)
+        // 1. Check primary fileURL
+        if let fileName, !fileName.isEmpty {
+            let fileURL = artworkDirectory.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: fileURL.path),
+               let img = UIImage(contentsOfFile: fileURL.path) {
+                return img
+            }
         }
+
         #if targetEnvironment(simulator)
-        if sourceImage == nil {
+        // 2. Check simulator fallback
+        if let fileName, !fileName.isEmpty {
             let tempFile = URL(fileURLWithPath: "/tmp/audia_shared_widget/WidgetArtworkCache").appendingPathComponent(fileName)
-            if FileManager.default.fileExists(atPath: tempFile.path) {
-                sourceImage = UIImage(contentsOfFile: tempFile.path)
+            if FileManager.default.fileExists(atPath: tempFile.path),
+               let img = UIImage(contentsOfFile: tempFile.path) {
+                return img
             }
         }
         #endif
 
-        guard let img = sourceImage else { return nil }
-        return img
+        // 3. Check shared Keychain (vital for physical devices)
+        if let fileName, !fileName.isEmpty {
+            let cleanId = fileName.replacingOccurrences(of: ".jpg", with: "")
+            if let data = WidgetKeychainStore.load(key: "audia_art_\(cleanId)"),
+               let img = UIImage(data: data) {
+                return img
+            }
+        }
+
+        // 4. Try current artwork key from Keychain
+        if let data = WidgetKeychainStore.load(key: "audia_art_current"),
+           let img = UIImage(data: data) {
+            return img
+        }
+
+        return nil
     }
     #endif
 

@@ -32,7 +32,8 @@ struct NowPlayingTimelineProvider: TimelineProvider {
         let state = WidgetDataStore.shared.readPlaybackState()
         let artwork = WidgetDataStore.shared.loadArtwork(fileName: state.artworkFileName)
         let entry = NowPlayingEntry(date: Date(), state: state, artwork: artwork)
-        completion(Timeline(entries: [entry], policy: .never))
+        let nextUpdate = Date().addingTimeInterval(15)
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 }
 

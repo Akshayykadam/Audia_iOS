@@ -204,7 +204,26 @@ extension AudiaLibraryStore {
     }
 
     func insertMapIgnoringConflicts(_ entry: SyncPlaylistEntry) async throws {
-        _ = try await db.insert(entry.toMap(), onConflict: .ignore)
+        try await db.write { db in
+            let maxPos = try Int.fetchOne(
+                db,
+                sql: "SELECT MAX(position) FROM playlist_song_map WHERE playlist_id = ?",
+                arguments: [entry.playlistId]
+            ) ?? -1
+            var map = entry.toMap()
+            map.position = maxPos + 1
+            try map.insert(db, onConflict: .ignore)
+
+            let count = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM playlist_song_map WHERE playlist_id = ?",
+                arguments: [entry.playlistId]
+            ) ?? 0
+            try db.execute(
+                sql: "UPDATE playlist SET remote_song_count = ? WHERE id = ?",
+                arguments: [count, entry.playlistId]
+            )
+        }
     }
 
     func fetchMapEntry(playlistId: String, songId: String) async throws -> SyncPlaylistEntry? {
@@ -219,6 +238,15 @@ extension AudiaLibraryStore {
     func deleteMapEntry(playlistId: String, songId: String) async throws {
         try await db.write { db in
             try db.execute(sql: "DELETE FROM playlist_song_map WHERE playlist_id = ? AND song_id = ?", arguments: [playlistId, songId])
+            let count = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM playlist_song_map WHERE playlist_id = ?",
+                arguments: [playlistId]
+            ) ?? 0
+            try db.execute(
+                sql: "UPDATE playlist SET remote_song_count = ? WHERE id = ?",
+                arguments: [count, playlistId]
+            )
         }
     }
 }
@@ -386,7 +414,7 @@ extension PlaylistEntity {
     func toSync() -> SyncPlaylist {
         SyncPlaylist(
             id: id,
-            browseId: browseId,
+            browseId: isAutoSync ? browseId : nil,
             name: name,
             thumbnailUrl: thumbnailUrl,
             isEditable: isEditable,

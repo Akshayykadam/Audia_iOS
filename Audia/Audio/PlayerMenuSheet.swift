@@ -8,6 +8,7 @@ import Foundation
 import Combine
 import AVFoundation
 import MediaPlayer
+import GRDB
 
 /// library/download/details rows.
 struct PlayerMenuSheet: View {
@@ -497,6 +498,12 @@ struct AddSongToPlaylistSheet: View {
 
     private func loadPlaylists() async {
         playlists = (try? await DatabaseService.shared.fetchPlaylists(limit: 100)) ?? []
+        let existingMaps = (try? await DatabaseService.shared.fetchAll(
+            PlaylistSongMap.self,
+            sql: "SELECT * FROM playlist_song_map WHERE song_id = ?",
+            arguments: [song.videoId]
+        )) ?? []
+        addedTo = Set(existingMaps.map(\.playlistId))
         isLoading = false
     }
 
@@ -504,7 +511,21 @@ struct AddSongToPlaylistSheet: View {
         guard !addedTo.contains(playlist.id) else { return }
         Task {
             do {
+                try? await DatabaseService.shared.write { db in
+                    let existing = try SongEntity.fetchOne(db, key: song.videoId)
+                    let entity = SongEntity.merging(
+                        existing: existing,
+                        id: song.videoId,
+                        title: song.title,
+                        artistName: song.artists.first?.name,
+                        albumName: song.album,
+                        duration: song.duration,
+                        thumbnailUrl: song.thumbnailUrl
+                    )
+                    try entity.save(db)
+                }
                 try await SyncBridge.mutations.addToPlaylist(playlistId: playlist.id, songId: song.videoId)
+                NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
                 addedTo.insert(playlist.id)
             } catch {
                 addedTo.remove(playlist.id)
@@ -518,12 +539,38 @@ struct AddSongToPlaylistSheet: View {
         isCreating = true
         defer { isCreating = false }
         do {
-            let playlistId = try await SyncBridge.mutations.createPlaylist(title: title)
+            let playlistId = UUID().uuidString
+            let entity = PlaylistEntity(
+                id: playlistId,
+                browseId: nil,
+                name: title,
+                thumbnailUrl: nil,
+                isEditable: true,
+                bookmarkedAt: Date(),
+                remoteSongCount: 0,
+                isAutoSync: false
+            )
+            try await DatabaseService.shared.insert(entity)
+            try? await DatabaseService.shared.write { db in
+                let existing = try SongEntity.fetchOne(db, key: song.videoId)
+                let songEntity = SongEntity.merging(
+                    existing: existing,
+                    id: song.videoId,
+                    title: song.title,
+                    artistName: song.artists.first?.name,
+                    albumName: song.album,
+                    duration: song.duration,
+                    thumbnailUrl: song.thumbnailUrl
+                )
+                try songEntity.save(db)
+            }
             try await SyncBridge.mutations.addToPlaylist(playlistId: playlistId, songId: song.videoId)
+            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
             await loadPlaylists()
             addedTo.insert(playlistId)
+            newPlaylistTitle = ""
         } catch {
-            // Leave the sheet open so the user can retry.
+            Log.sync.error("Failed to create and add to playlist: \(error)")
         }
     }
 }

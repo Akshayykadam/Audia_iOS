@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import GRDB
 
 /// Actions menu content for Playlist popup Menu.
 struct PlaylistMenuActionsView: View {
@@ -209,10 +210,14 @@ struct PlaylistMoreSheet: View {
         let name = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, name != playlist.title else { return }
         Task {
+            try? await DatabaseService.shared.write { db in
+                try db.execute(sql: "UPDATE playlist SET name = ? WHERE id = ?", arguments: [name, playlist.playlistId])
+            }
             try? await SyncBridge.mutations.renamePlaylist(
                 playlistId: playlist.playlistId,
                 newName: name
             )
+            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
         }
     }
 

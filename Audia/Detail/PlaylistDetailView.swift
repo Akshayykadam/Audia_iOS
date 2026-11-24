@@ -44,7 +44,7 @@ final class PlaylistDetailViewModel {
         // Check if this playlist already has local cached data in SQLite
         if let entity = try? await DatabaseService.shared.fetchOne(PlaylistEntity.self, key: playlistId) {
             await loadLocalPlaylist(entity: entity)
-            if entity.browseId == nil {
+            if (entity.browseId == nil || !entity.isAutoSync) && (playlist?.songs.isEmpty == false) {
                 return
             }
         }
@@ -463,6 +463,12 @@ struct PlaylistDetailView: View {
                 await viewModel.load()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .libraryPlaylistsUpdated)) { _ in
+            Task {
+                await fetchEntity()
+                await viewModel.load()
+            }
+        }
         .onAppear {
             if viewModel.autoRoute == .likedSongs {
                 Task { await viewModel.load() }
@@ -502,10 +508,14 @@ struct PlaylistDetailView: View {
             guard !name.isEmpty, name != (viewModel.playlist?.title ?? "") else { return }
             Task {
                 let pid = viewModel.playlist?.playlistId ?? playlistId
+                try? await DatabaseService.shared.write { db in
+                    try db.execute(sql: "UPDATE playlist SET name = ? WHERE id = ?", arguments: [name, pid])
+                }
                 try? await SyncBridge.mutations.renamePlaylist(
                     playlistId: pid,
                     newName: name
                 )
+                NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
                 await viewModel.load()
             }
         }
@@ -869,8 +879,14 @@ struct PlaylistDetailView: View {
             sql: "SELECT * FROM playlist_song_map WHERE playlist_id = ? AND song_id = ? LIMIT 1",
             arguments: [playlistId, song.videoId]
         )) ?? []
-        guard let setVideoId = maps.first?.setVideoId else { return }
+        let setVideoId = maps.first?.setVideoId ?? ""
         try? await SyncBridge.mutations.removeFromPlaylist(playlistId: playlistId, songId: song.videoId, setVideoId: setVideoId)
+        try? await DatabaseService.shared.write { db in
+            try db.execute(sql: "DELETE FROM playlist_song_map WHERE playlist_id = ? AND song_id = ?", arguments: [playlistId, song.videoId])
+            let count = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM playlist_song_map WHERE playlist_id = ?", arguments: [playlistId]) ?? 0
+            try db.execute(sql: "UPDATE playlist SET remote_song_count = ? WHERE id = ?", arguments: [count, playlistId])
+        }
+        NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
         await viewModel.load()
     }
 
@@ -1002,6 +1018,7 @@ struct AddSongToPlaylistView: View {
         addingIds.insert(song.id)
         do {
             try await SyncBridge.mutations.addToPlaylist(playlistId: playlistId, songId: song.id)
+            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
             await onDone()
             dismiss()
         } catch {
