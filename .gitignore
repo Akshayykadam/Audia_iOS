@@ -1,0 +1,99 @@
+# ==============================================================================
+# Audia iOS - .gitignore
+# ==============================================================================
+
+# Xcode Build Products & Derived Data
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcarchive
+*.xcresult
+*.xccovreport
+*.xccovarchive
+*.gcno
+*.gcda
+
+# Xcode User Data & Workspace State
+# (Keeps project.xcworkspace/contents.xcworkspacedata & xcshareddata schemes tracked)
+xcuserdata/
+*.xcuserdatad
+*.xcuserstate
+*.xcscmblueprint
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager (SPM)
+.build/
+Packages/
+Package.pins
+.swiftpm/xcode/xcuserdata/
+# Uncomment if you prefer not to pin package versions in git:
+# Package.resolved
+
+# CocoaPods & Carthage (if used)
+Pods/
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# macOS System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup, Patch & Temporary Files
+*.bak
+*.tmp
+*.temp
+*.swp
+*~
+*.orig
+*.rej
+
+# Local Scratch & Ad-hoc Test Scripts (root level)
+/test_*.swift
+/scratch/
+
+# Secrets, Certificates & Local Configuration
+*.p12
+*.mobileprovision
+*.cer
+*.key
+*.keystore
+*.jks
+.env
+.env.*
+!.env.example
+*.local.xcconfig
+Secrets.xcconfig
+
+# Python (localization and build scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Editors & IDEs
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace

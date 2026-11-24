@@ -10,11 +10,37 @@ struct PlaylistMenuActionsView: View {
     let playlist: PlaylistDetailInfo
     var onEdit: () -> Void
     var onDelete: (() -> Void)? = nil
+    var onAddSongs: (() -> Void)? = nil
 
     @ObservedObject private var downloadManager = DownloadManager.shared
 
+    private var isPlaylistDownloading: Bool {
+        guard !playlist.songs.isEmpty else { return false }
+        return playlist.songs.contains { song in
+            if case .downloading = downloadManager.state(for: song.videoId) {
+                return true
+            }
+            return false
+        }
+    }
+
+    private var isPlaylistDownloaded: Bool {
+        guard !playlist.songs.isEmpty else { return false }
+        return playlist.songs.allSatisfy { song in
+            downloadManager.state(for: song.videoId) == .completed
+        }
+    }
+
     var body: some View {
         Group {
+            if let onAddSongs {
+                Button {
+                    onAddSongs()
+                } label: {
+                    Label("Add Songs", systemImage: "plus")
+                }
+            }
+
             Button {
                 onEdit()
             } label: {
@@ -29,12 +55,24 @@ struct PlaylistMenuActionsView: View {
                 Label("Add to Queue", systemImage: "text.badge.plus")
             }
 
-            Button {
-                for song in playlist.songs {
-                    Task { await downloadManager.download(song: song) }
+            if isPlaylistDownloading {
+                Button {} label: {
+                    Label("Downloading…", systemImage: "arrow.down.circle.fill")
                 }
-            } label: {
-                Label("Download", systemImage: "arrow.down.circle")
+                .disabled(true)
+            } else if isPlaylistDownloaded {
+                Button {} label: {
+                    Label("Downloaded", systemImage: "checkmark.circle.fill")
+                }
+                .disabled(true)
+            } else {
+                Button {
+                    for song in playlist.songs {
+                        Task { await downloadManager.download(song: song) }
+                    }
+                } label: {
+                    Label("Download", systemImage: "arrow.down.circle")
+                }
             }
 
             Divider()
@@ -68,8 +106,26 @@ struct PlaylistMoreSheet: View {
     var onDelete: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var downloadManager = DownloadManager.shared
     @State private var showEditAlert = false
     @State private var editedName = ""
+
+    private var isPlaylistDownloading: Bool {
+        guard !playlist.songs.isEmpty else { return false }
+        return playlist.songs.contains { song in
+            if case .downloading = downloadManager.state(for: song.videoId) {
+                return true
+            }
+            return false
+        }
+    }
+
+    private var isPlaylistDownloaded: Bool {
+        guard !playlist.songs.isEmpty else { return false }
+        return playlist.songs.allSatisfy { song in
+            downloadManager.state(for: song.videoId) == .completed
+        }
+    }
 
     var body: some View {
         SheetChrome {
@@ -92,13 +148,27 @@ struct PlaylistMoreSheet: View {
                     dismiss()
                 }
                 Divider()
-                MenuRow(
-                    icon: "square.and.arrow.down",
-                    title: "Download",
-                    subtitle: "Download all songs for offline playback"
-                ) {
-                    downloadAll()
-                    dismiss()
+                if isPlaylistDownloading {
+                    MenuRow(
+                        icon: "arrow.down.circle.fill",
+                        title: "Downloading…",
+                        subtitle: "Downloading songs for offline playback"
+                    ) { }
+                } else if isPlaylistDownloaded {
+                    MenuRow(
+                        icon: "checkmark.circle.fill",
+                        title: "Downloaded",
+                        subtitle: "All songs downloaded"
+                    ) { }
+                } else {
+                    MenuRow(
+                        icon: "square.and.arrow.down",
+                        title: "Download",
+                        subtitle: "Download all songs for offline playback"
+                    ) {
+                        downloadAll()
+                        dismiss()
+                    }
                 }
                 Divider()
                 MenuRow(

@@ -12,9 +12,20 @@ import UIKit
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+    ) -> Bool {
+        UIWindow.appearance().tintColor = .white
+        UIView.appearance().tintColor = .white
+        PlayerController.registerRemoteControlSupport()
+        return true
+    }
+
+    func application(
+        _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
     ) -> UIInterfaceOrientationMask {
-        .portrait
+        window?.tintColor = .white
+        return .portrait
     }
 }
 #endif
@@ -32,6 +43,7 @@ struct AudiaApp: App {
         ensureDirectories()
         Log.wireSwiftyTube()
         PlayerController.registerRemoteControlSupport()
+        WidgetBridge.shared.startListening()
         observePlaybackSettings()
         Task { await InnerTubeClient.audiaShared.syncAudiaLocale() }
         if CommandLine.arguments.contains("-testSong") {
@@ -46,6 +58,9 @@ struct AudiaApp: App {
             )
             NowPlaying.shared.setQueue([song], startIndex: 0)
             NowPlaying.shared.update(with: song)
+            Task {
+                try? await PlaybackManager.shared.resolveAndPlay(videoId: song.videoId)
+            }
         }
         if CommandLine.arguments.contains("-testQueue") {
             let songs = [
@@ -143,48 +158,15 @@ struct AudiaApp: App {
             ContentView()
                 .font(.satoshi(.body))
                 .preferredColorScheme(settings.preferredColorScheme)
-                .tint(settings.accentColor)
+                .tint(settings.effectiveAccentColor)
                 .environment(settings)
                 .environment(\.downloadManager, DownloadManager.shared)
                 .onOpenURL { url in
-                    if url.scheme == "audia" {
-                        if url.host == "tab" {
-                            if let index = Int(url.lastPathComponent) {
-                                AppRouter.shared.selectedTabIndex = index
-                            }
-                        } else if url.host == "player" {
-                            AppRouter.shared.expandPlayer()
-                        } else if url.host == "settings" {
-                            AppRouter.shared.open(.settings)
-                        } else if url.host == "artist" {
-                            AppRouter.shared.open(.artist(browseId: url.lastPathComponent))
-                        } else if url.host == "playlist" {
-                            let listId = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                                .queryItems?.first(where: { $0.name == "list" })?.value ?? url.lastPathComponent
-                            if !listId.isEmpty {
-                                AppRouter.shared.open(.playlist(playlistId: listId))
-                            }
-                        } else if url.host == "testplay" {
-                            let song = SongItem(
-                                videoId: "g-of38yG1vE",
-                                title: "Snowman",
-                                artists: [YTArtist(name: "Sia", id: "UCaPIRYCKs51kvD4jrbwMH1w")],
-                                duration: 165,
-                                isExplicit: false
-                            )
-                            NowPlaying.shared.setQueue([song], startIndex: 0)
-                            AppRouter.shared.expandPlayer()
-                        } else if url.host == "testlike" {
-                            if let song = NowPlaying.shared.queueSongs.first {
-                                Task { await LikeStore.shared.toggle(song: song) }
-                            }
-                        }
-                    } else if let parsed = PlaylistLinkParser.parse(url.absoluteString) {
-                        if case .youTube(let pid) = parsed {
-                            AppRouter.shared.open(.playlist(playlistId: pid))
-                        }
-                    }
+                    DeepLinkHandler.handle(url: url)
                 }
+                #if canImport(UIKit)
+                .background(WindowTintWhiteView())
+                #endif
         }
     }
 
@@ -205,3 +187,25 @@ struct AudiaApp: App {
         try? FileManager.default.createDirectory(at: docs.appendingPathComponent("Player"), withIntermediateDirectories: true)
     }
 }
+
+#if canImport(UIKit)
+private struct WindowTintWhiteView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        DispatchQueue.main.async {
+            view.window?.tintColor = .white
+            UIWindow.appearance().tintColor = .white
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async {
+            uiView.window?.tintColor = .white
+        }
+    }
+}
+#endif
+

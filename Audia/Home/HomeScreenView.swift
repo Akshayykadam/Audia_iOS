@@ -92,7 +92,7 @@ struct HomeScreenView: View {
                 }
                 .frame(height: 1)
             }
-            .padding(.bottom, 96)
+            .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .miniPlayerTracksScroll()

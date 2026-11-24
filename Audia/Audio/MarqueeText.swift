@@ -10,7 +10,7 @@ struct MarqueeText: View {
     let text: String
     var font: Font = .satoshi(.body)
     var frameHeight: CGFloat = 24
-    var textColor: Color = .white
+    var textColor: Color = AudiaTheme.textPrimary
 
     // MARK: - State
     @State private var offset: CGFloat = 0

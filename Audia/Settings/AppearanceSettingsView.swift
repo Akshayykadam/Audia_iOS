@@ -7,6 +7,7 @@ import SwiftUI
 
 struct AppearanceSettingsView: View {
     @Environment(SettingsStore.self) private var settings
+    @Environment(\.colorScheme) private var colorScheme
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 14), count: 6)
 
@@ -15,11 +16,39 @@ struct AppearanceSettingsView: View {
 
         List {
             Section {
-                SettingsPickerRow("Theme Mode", icon: "sun.max", selection: $settings.themeMode)
+                SettingsToggleRow(
+                    "Dark Mode",
+                    icon: "moon.fill",
+                    isOn: Binding(
+                        get: {
+                            if settings.themeMode == .system {
+                                return colorScheme == .dark
+                            }
+                            return settings.themeMode == .dark
+                        },
+                        set: { isDark in
+                            settings.themeMode = isDark ? .dark : .light
+                        }
+                    )
+                )
+                SettingsToggleRow(
+                    "Match System",
+                    icon: "circle.lefthalf.filled",
+                    isOn: Binding(
+                        get: { settings.themeMode == .system },
+                        set: { isSystem in
+                            if isSystem {
+                                settings.themeMode = .system
+                            } else {
+                                settings.themeMode = colorScheme == .dark ? .dark : .light
+                            }
+                        }
+                    )
+                )
             } header: {
                 Text("Theme")
             } footer: {
-                Text("Choose how the app follows your device appearance.")
+                Text("Choose between light and dark mode, or follow your device settings.")
             }
 
             Section {
@@ -35,7 +64,7 @@ struct AppearanceSettingsView: View {
                                 if settings.accentName == preset.name {
                                     Image(systemName: "checkmark")
                                         .font(.satoshi(size: 15, weight: .bold))
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(preset.name == "White" ? AudiaTheme.onPrimary : Color.white)
                                 }
                             }
                         }
@@ -72,6 +101,7 @@ struct AppearanceSettingsView: View {
         .tint(settings.accentColor)
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
+        .appListBottomClearance()
         .miniPlayerTracksScroll()
     }
 

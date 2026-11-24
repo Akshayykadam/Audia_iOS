@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14A200092FF40002006B3990 /* AudiaShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 14A200072FF40002006B3990 /* AudiaShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		14A200092FF40001006B3990 /* AudiaWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 14A200072FF40001006B3990 /* AudiaWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		14A100092FF40001006B3990 /* AudiaSafariExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 14A100072FF40001006B3990 /* AudiaSafariExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		144200113040C1BE0032F8CD /* fk_libavcodec.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 144200013040C1BE0032F8CD /* fk_libavcodec.xcframework */; };
 		144200123040C1BE0032F8CD /* fk_libavdevice.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 144200023040C1BE0032F8CD /* fk_libavdevice.xcframework */; };
 		144200133040C1BE0032F8CD /* fk_libavfilter.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 144200033040C1BE0032F8CD /* fk_libavfilter.xcframework */; };
@@ -30,7 +33,44 @@
 		14B578F32FF21002006B3990 /* SwiftyTube in Frameworks */ = {isa = PBXBuildFile; productRef = 14B578F22FF21001006B3990 /* SwiftyTube */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		14A2000C2FF40002006B3990 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 14B576272FF190EF006B3990 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 14A200012FF40002006B3990;
+			remoteInfo = AudiaShareExtension;
+		};
+		14A2000C2FF40001006B3990 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 14B576272FF190EF006B3990 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 14A200012FF40001006B3990;
+			remoteInfo = AudiaWidgets;
+		};
+		14A1000C2FF40001006B3990 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 14B576272FF190EF006B3990 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 14A100012FF40001006B3990;
+			remoteInfo = AudiaSafariExtension;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		14A1000A2FF40001006B3990 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				14A200092FF40002006B3990 /* AudiaShareExtension.appex in Embed Foundation Extensions */,
+				14A100092FF40001006B3990 /* AudiaSafariExtension.appex in Embed Foundation Extensions */,
+				14A200092FF40001006B3990 /* AudiaWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1442DDC53040C1BE0032F8CD /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -52,6 +92,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		14A200072FF40002006B3990 /* AudiaShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = AudiaShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		14A200072FF40001006B3990 /* AudiaWidgets.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = AudiaWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		14A100072FF40001006B3990 /* AudiaSafariExtension.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = AudiaSafariExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		144200013040C1BE0032F8CD /* fk_libavcodec.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = fk_libavcodec.xcframework; path = "build/ffmpeg-kit-xcframeworks/fk_libavcodec.xcframework"; sourceTree = SOURCE_ROOT; };
 		144200023040C1BE0032F8CD /* fk_libavdevice.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = fk_libavdevice.xcframework; path = "build/ffmpeg-kit-xcframeworks/fk_libavdevice.xcframework"; sourceTree = SOURCE_ROOT; };
 		144200033040C1BE0032F8CD /* fk_libavfilter.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = fk_libavfilter.xcframework; path = "build/ffmpeg-kit-xcframeworks/fk_libavfilter.xcframework"; sourceTree = SOURCE_ROOT; };
@@ -64,6 +107,28 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		14A200082FF40002006B3990 /* Exceptions for "AudiaShareExtension" folder in "AudiaShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 14A200012FF40002006B3990 /* AudiaShareExtension */;
+		};
+		14A200082FF40001006B3990 /* Exceptions for "AudiaWidgets" folder in "AudiaWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AudiaWidgets.entitlements,
+				Info.plist,
+			);
+			target = 14A200012FF40001006B3990 /* AudiaWidgets */;
+		};
+		14A100082FF40001006B3990 /* Exceptions for "AudiaSafariExtension" folder in "AudiaSafariExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 14A100012FF40001006B3990 /* AudiaSafariExtension */;
+		};
 		14B578EA2FF30001006B3990 /* Exceptions for "Audia" folder in "Audia" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -74,6 +139,30 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		14A200062FF40002006B3990 /* AudiaShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				14A200082FF40002006B3990 /* Exceptions for "AudiaShareExtension" folder in "AudiaShareExtension" target */,
+			);
+			path = AudiaShareExtension;
+			sourceTree = "<group>";
+		};
+		14A200062FF40001006B3990 /* AudiaWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				14A200082FF40001006B3990 /* Exceptions for "AudiaWidgets" folder in "AudiaWidgets" target */,
+			);
+			path = AudiaWidgets;
+			sourceTree = "<group>";
+		};
+		14A100062FF40001006B3990 /* AudiaSafariExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				14A100082FF40001006B3990 /* Exceptions for "AudiaSafariExtension" folder in "AudiaSafariExtension" target */,
+			);
+			path = AudiaSafariExtension;
+			sourceTree = "<group>";
+		};
 		14B576312FF190EF006B3990 /* Audia */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -85,6 +174,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		14A200042FF40002006B3990 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		14A200042FF40001006B3990 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		14A100042FF40001006B3990 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		14B5762C2FF190EF006B3990 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -126,6 +236,9 @@
 		14B576262FF190EF006B3990 = {
 			isa = PBXGroup;
 			children = (
+				14A200062FF40002006B3990 /* AudiaShareExtension */,
+				14A100062FF40001006B3990 /* AudiaSafariExtension */,
+				14A200062FF40001006B3990 /* AudiaWidgets */,
 				14B576312FF190EF006B3990 /* Audia */,
 				144200003040C1BE0032F8CD /* Frameworks */,
 				14B576302FF190EF006B3990 /* Products */,
@@ -135,6 +248,9 @@
 		14B576302FF190EF006B3990 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				14A200072FF40002006B3990 /* AudiaShareExtension.appex */,
+				14A100072FF40001006B3990 /* AudiaSafariExtension.appex */,
+				14A200072FF40001006B3990 /* AudiaWidgets.appex */,
 				14B5762F2FF190EF006B3990 /* Audia.app */,
 			);
 			name = Products;
@@ -143,10 +259,71 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		14A200012FF40002006B3990 /* AudiaShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 14A200022FF40002006B3990 /* Build configuration list for PBXNativeTarget "AudiaShareExtension" */;
+			buildPhases = (
+				14A200032FF40002006B3990 /* Sources */,
+				14A200042FF40002006B3990 /* Frameworks */,
+				14A200052FF40002006B3990 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				14A200062FF40002006B3990 /* AudiaShareExtension */,
+			);
+			name = AudiaShareExtension;
+			productName = AudiaShareExtension;
+			productReference = 14A200072FF40002006B3990 /* AudiaShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		14A200012FF40001006B3990 /* AudiaWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 14A200022FF40001006B3990 /* Build configuration list for PBXNativeTarget "AudiaWidgets" */;
+			buildPhases = (
+				14A200032FF40001006B3990 /* Sources */,
+				14A200042FF40001006B3990 /* Frameworks */,
+				14A200052FF40001006B3990 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				14A200062FF40001006B3990 /* AudiaWidgets */,
+			);
+			name = AudiaWidgets;
+			productName = AudiaWidgets;
+			productReference = 14A200072FF40001006B3990 /* AudiaWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		14A100012FF40001006B3990 /* AudiaSafariExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 14A100022FF40001006B3990 /* Build configuration list for PBXNativeTarget "AudiaSafariExtension" */;
+			buildPhases = (
+				14A100032FF40001006B3990 /* Sources */,
+				14A100042FF40001006B3990 /* Frameworks */,
+				14A100052FF40001006B3990 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				14A100062FF40001006B3990 /* AudiaSafariExtension */,
+			);
+			name = AudiaSafariExtension;
+			productName = AudiaSafariExtension;
+			productReference = 14A100072FF40001006B3990 /* AudiaSafariExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		14B5762E2FF190EF006B3990 /* Audia */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 14B5763A2FF190F0006B3990 /* Build configuration list for PBXNativeTarget "Audia" */;
 			buildPhases = (
+				14A1000A2FF40001006B3990 /* Embed Foundation Extensions */,
 				14B5762B2FF190EF006B3990 /* Sources */,
 				14B5762C2FF190EF006B3990 /* Frameworks */,
 				1442DDC53040C1BE0032F8CD /* Embed Frameworks */,
@@ -157,6 +334,9 @@
 			buildRules = (
 			);
 			dependencies = (
+				14A2000B2FF40002006B3990 /* PBXTargetDependency */,
+				14A1000B2FF40001006B3990 /* PBXTargetDependency */,
+				14A2000B2FF40001006B3990 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				14B576312FF190EF006B3990 /* Audia */,
@@ -183,6 +363,15 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
+					14A200012FF40002006B3990 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					14A100012FF40001006B3990 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					14A200012FF40001006B3990 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					14B5762E2FF190EF006B3990 = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -210,12 +399,36 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				14A200012FF40002006B3990 /* AudiaShareExtension */,
 				14B5762E2FF190EF006B3990 /* Audia */,
+				14A200012FF40001006B3990 /* AudiaWidgets */,
+				14A100012FF40001006B3990 /* AudiaSafariExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		14A200052FF40002006B3990 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		14A200052FF40001006B3990 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		14A100052FF40001006B3990 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		14B5762D2FF190EF006B3990 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -268,6 +481,27 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		14A200032FF40002006B3990 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		14A200032FF40001006B3990 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		14A100032FF40001006B3990 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		14B5762B2FF190EF006B3990 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -277,7 +511,207 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		14A2000B2FF40002006B3990 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 14A200012FF40002006B3990 /* AudiaShareExtension */;
+			targetProxy = 14A2000C2FF40002006B3990 /* PBXContainerItemProxy */;
+		};
+		14A2000B2FF40001006B3990 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 14A200012FF40001006B3990 /* AudiaWidgets */;
+			targetProxy = 14A2000C2FF40001006B3990 /* PBXContainerItemProxy */;
+		};
+		14A1000B2FF40001006B3990 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 14A100012FF40001006B3990 /* AudiaSafariExtension */;
+			targetProxy = 14A1000C2FF40001006B3990 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		14A2000D2FF40002006B3990 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudiaShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Audia;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.akshayysk.Audia.AudiaShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		14A2000E2FF40002006B3990 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudiaShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Audia;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.akshayysk.Audia.AudiaShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		14A2000D2FF40001006B3990 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_ENTITLEMENTS = AudiaWidgets/AudiaWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudiaWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Audia;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.akshayysk.Audia.AudiaWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		14A2000E2FF40001006B3990 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_ENTITLEMENTS = AudiaWidgets/AudiaWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudiaWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Audia;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.akshayysk.Audia.AudiaWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		14A1000D2FF40001006B3990 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudiaSafariExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Open in Audia";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.akshayysk.Audia.AudiaSafariExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		14A1000E2FF40001006B3990 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudiaSafariExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Open in Audia";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.akshayysk.Audia.AudiaSafariExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		14B576382FF190F0006B3990 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -404,6 +838,7 @@
 		14B5763B2FF190F0006B3990 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Audia/Audia.entitlements;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
@@ -435,6 +870,7 @@
 		14B5763C2FF190F0006B3990 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Audia/Audia.entitlements;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
@@ -466,6 +902,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		14A200022FF40002006B3990 /* Build configuration list for PBXNativeTarget "AudiaShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14A2000D2FF40002006B3990 /* Debug */,
+				14A2000E2FF40002006B3990 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		14A200022FF40001006B3990 /* Build configuration list for PBXNativeTarget "AudiaWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14A2000D2FF40001006B3990 /* Debug */,
+				14A2000E2FF40001006B3990 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		14A100022FF40001006B3990 /* Build configuration list for PBXNativeTarget "AudiaSafariExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14A1000D2FF40001006B3990 /* Debug */,
+				14A1000E2FF40001006B3990 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		14B5762A2FF190EF006B3990 /* Build configuration list for PBXProject "Audia" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

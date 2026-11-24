@@ -25,11 +25,12 @@ struct SheetChrome<Content: View>: View {
                 .padding(16)
             }
             .scrollContentBackground(.hidden)
-            .background(AudiaTheme.background)
+            .background(AudiaTheme.sheetBackground)
             .navigationBarTitleDisplayMode(.inline)
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationBackground(AudiaTheme.sheetBackground)
     }
 }
 
@@ -47,11 +48,11 @@ struct MenuCard<Content: View>: View {
         }
         .background(
             RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .fill(AudiaTheme.surface)
+                .fill(AudiaTheme.sheetSurface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
+                .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
         )
     }
 }
@@ -90,7 +91,7 @@ struct MenuRowLabel: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(LocalizedStringKey(title))
                     .font(.satoshi(.body))
-                    .foregroundStyle(destructive ? Color.red : Color.white)
+                    .foregroundStyle(destructive ? Color.red : AudiaTheme.textPrimary)
                 if let subtitle, !subtitle.isEmpty {
                     Text(LocalizedStringKey(subtitle))
                         .font(.satoshi(.footnote))

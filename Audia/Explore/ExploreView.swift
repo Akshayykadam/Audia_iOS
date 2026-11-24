@@ -69,7 +69,7 @@ struct ExploreView: View {
     private var sectionsList: some View {
         ScrollView {
             ExploreSectionsList(sections: viewModel.sections, pendingRoute: $pendingRoute)
-                .padding(.bottom, 96)
+                .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .miniPlayerTracksScroll()
@@ -221,7 +221,7 @@ struct MoodDetailView: View {
                 } else {
                     ScrollView {
                         ExploreSectionsList(sections: sections, pendingRoute: $pendingRoute)
-                            .padding(.bottom, 96)
+                            .appBottomClearance()
                     }
                     .scrollIndicators(.automatic)
                     .miniPlayerTracksScroll()

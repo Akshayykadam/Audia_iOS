@@ -24,7 +24,7 @@ struct ArtworkMosaicView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.22), radius: 16, y: 6)
     }

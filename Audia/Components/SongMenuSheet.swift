@@ -104,7 +104,7 @@ struct SongMenuSheet: View {
                     text: song.title,
                     font: .headline,
                     frameHeight: 24,
-                    textColor: .white
+                    textColor: AudiaTheme.textPrimary
                 )
                 Text(song.artistNamesDisplay)
                     .font(.satoshi(.subheadline))
@@ -117,11 +117,11 @@ struct SongMenuSheet: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AudiaTheme.surface)
+                .fill(AudiaTheme.sheetSurface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
+                .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
         )
     }
 

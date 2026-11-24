@@ -95,6 +95,7 @@ struct ContentSettingsView: View {
         }
         .navigationTitle("Content")
         .navigationBarTitleDisplayMode(.inline)
+        .appListBottomClearance()
         .miniPlayerTracksScroll()
     }
 

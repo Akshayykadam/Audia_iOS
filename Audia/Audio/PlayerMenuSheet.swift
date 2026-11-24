@@ -108,10 +108,10 @@ struct PlayerMenuSheet: View {
 
     private var cardBackground: some View {
         RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(AudiaTheme.surface)
+            .fill(AudiaTheme.sheetSurface)
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
+                    .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
             )
     }
 
@@ -127,7 +127,8 @@ struct PlayerMenuSheet: View {
             }
             .buttonStyle(.plain)
 
-            SystemVolumeSlider(volumeObserver: volumeObserver)
+            ModernVolumeSlider(volumeObserver: volumeObserver)
+                .frame(maxWidth: .infinity)
                 .frame(height: 32)
                 .accessibilityLabel("System volume")
         }
@@ -229,10 +230,10 @@ struct PlayerMenuSheet: View {
         .frame(height: 66)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(AudiaTheme.surface)
+                .fill(AudiaTheme.sheetSurface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
+                        .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -456,7 +457,7 @@ struct AddSongToPlaylistSheet: View {
                                 Spacer()
                                 if addedTo.contains(playlist.id) {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(AudiaTheme.primary)
                                 }
                             }
                         }
@@ -550,7 +551,7 @@ struct SongDetailsView: View {
             }
             .padding(16)
         }
-        .background(AudiaTheme.background)
+        .background(AudiaTheme.sheetBackground)
         .navigationTitle("Details")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadMetadata() }
@@ -615,11 +616,11 @@ struct SongDetailsView: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(AudiaTheme.surface)
+                    .fill(AudiaTheme.sheetSurface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
+                    .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
             )
         }
     }
@@ -684,17 +685,72 @@ final class SystemVolumeObserver: ObservableObject {
         observation?.invalidate()
     }
 
-    func toggleMute() {
+    func setVolume(_ newVolume: Float) {
+        let clamped = max(0, min(1, newVolume))
+        volume = clamped
         guard let slider = activeSlider else { return }
-        if slider.value > 0.01 {
-            lastNonZeroVolume = slider.value
-            slider.setValue(0, animated: false)
-            slider.sendActions(for: .valueChanged)
+        slider.setValue(clamped, animated: false)
+        slider.sendActions(for: .valueChanged)
+    }
+
+    func toggleMute() {
+        if volume > 0.01 {
+            lastNonZeroVolume = volume
+            setVolume(0)
         } else {
             let restoreVal = lastNonZeroVolume > 0.05 ? lastNonZeroVolume : 0.5
-            slider.setValue(restoreVal, animated: false)
-            slider.sendActions(for: .valueChanged)
+            setVolume(restoreVal)
         }
+    }
+}
+
+private struct ModernVolumeSlider: View {
+    @ObservedObject var volumeObserver: SystemVolumeObserver
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = max(0, geo.size.width)
+            let thumbDiameter: CGFloat = 18
+            let trackHeight: CGFloat = 6
+            let usableWidth = max(0, width - thumbDiameter)
+            let clampedValue = CGFloat(max(0, min(1, volumeObserver.volume)))
+            let thumbX = clampedValue * usableWidth
+
+            ZStack(alignment: .leading) {
+                // Background track
+                Capsule()
+                    .fill(AudiaTheme.sheetTrack)
+                    .frame(height: trackHeight)
+
+                // Active fill
+                Capsule()
+                    .fill(AudiaTheme.primary)
+                    .frame(width: thumbX + thumbDiameter / 2, height: trackHeight)
+
+                // Circular thumb
+                Circle()
+                    .fill(AudiaTheme.primary)
+                    .frame(width: thumbDiameter, height: thumbDiameter)
+                    .shadow(color: Color.black.opacity(0.18), radius: 3, y: 1.5)
+                    .offset(x: thumbX)
+            }
+            .frame(height: geo.size.height, alignment: .center)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        let newValue = Float((gesture.location.x - thumbDiameter / 2) / usableWidth)
+                        volumeObserver.setVolume(newValue)
+                    }
+            )
+        }
+        .frame(height: 32)
+        .background(
+            SystemVolumeSlider(volumeObserver: volumeObserver)
+                .frame(width: 1, height: 1)
+                .opacity(0.001)
+                .allowsHitTesting(false)
+        )
     }
 }
 
@@ -705,30 +761,66 @@ private struct SystemVolumeSlider: UIViewRepresentable {
         let volumeView = CustomMPVolumeView(frame: .zero)
         volumeView.showsRouteButton = false
         volumeView.showsVolumeSlider = true
+        volumeView.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        volumeView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let trackHeight: CGFloat = 6
-        let thumbDiameter: CGFloat = 18
-
-        let minTrack = makeCapsuleImage(color: .white, height: trackHeight)
-        let maxTrack = makeCapsuleImage(color: UIColor(white: 0.22, alpha: 1.0), height: trackHeight)
-        let thumb = makeCircleImage(color: .white, size: thumbDiameter)
-
-        volumeView.setMinimumVolumeSliderImage(minTrack, for: .normal)
-        volumeView.setMaximumVolumeSliderImage(maxTrack, for: .normal)
-        volumeView.setVolumeThumbImage(thumb, for: .normal)
-        volumeView.setVolumeThumbImage(thumb, for: .highlighted)
+        let isLight = context.environment.colorScheme == .light
+        applyTheme(to: volumeView, isLight: isLight)
 
         volumeView.onSliderFound = { [weak volumeObserver] slider in
             volumeObserver?.activeSlider = slider
-            slider.minimumTrackTintColor = .white
-            slider.maximumTrackTintColor = UIColor(white: 0.22, alpha: 1.0)
-            slider.thumbTintColor = .white
+            let isLightNow = context.environment.colorScheme == .light
+            updateSliderTheme(slider: slider, isLight: isLightNow)
         }
 
         return volumeView
     }
 
-    func updateUIView(_ uiView: CustomMPVolumeView, context: Context) {}
+    func updateUIView(_ uiView: CustomMPVolumeView, context: Context) {
+        let isLight = context.environment.colorScheme == .light
+        applyTheme(to: uiView, isLight: isLight)
+        if let slider = uiView.slider {
+            updateSliderTheme(slider: slider, isLight: isLight)
+        }
+    }
+
+    private func applyTheme(to volumeView: CustomMPVolumeView, isLight: Bool) {
+        let trackHeight: CGFloat = 6
+        let thumbDiameter: CGFloat = 18
+
+        let minColor: UIColor = isLight ? UIColor(white: 0.12, alpha: 1.0) : .white
+        let maxColor: UIColor = isLight ? UIColor(white: 0.85, alpha: 1.0) : UIColor(white: 0.22, alpha: 1.0)
+
+        let minTrack = makeCapsuleImage(color: minColor, height: trackHeight)
+        let maxTrack = makeCapsuleImage(color: maxColor, height: trackHeight)
+        let thumb = makeCircleImage(color: minColor, size: thumbDiameter)
+
+        volumeView.setMinimumVolumeSliderImage(minTrack, for: .normal)
+        volumeView.setMaximumVolumeSliderImage(maxTrack, for: .normal)
+        volumeView.setVolumeThumbImage(thumb, for: .normal)
+        volumeView.setVolumeThumbImage(thumb, for: .highlighted)
+    }
+
+    private func updateSliderTheme(slider: UISlider, isLight: Bool) {
+        let trackHeight: CGFloat = 6
+        let thumbDiameter: CGFloat = 18
+
+        let minColor: UIColor = isLight ? UIColor(white: 0.12, alpha: 1.0) : .white
+        let maxColor: UIColor = isLight ? UIColor(white: 0.85, alpha: 1.0) : UIColor(white: 0.22, alpha: 1.0)
+
+        let minTrack = makeCapsuleImage(color: minColor, height: trackHeight)
+        let maxTrack = makeCapsuleImage(color: maxColor, height: trackHeight)
+        let thumb = makeCircleImage(color: minColor, size: thumbDiameter)
+
+        slider.minimumTrackTintColor = minColor
+        slider.maximumTrackTintColor = maxColor
+        slider.thumbTintColor = minColor
+
+        slider.setMinimumTrackImage(minTrack, for: .normal)
+        slider.setMaximumTrackImage(maxTrack, for: .normal)
+        slider.setThumbImage(thumb, for: .normal)
+        slider.setThumbImage(thumb, for: .highlighted)
+    }
 
     private func makeCapsuleImage(color: UIColor, height: CGFloat) -> UIImage {
         let cornerRadius = height / 2.0
@@ -755,11 +847,19 @@ private struct SystemVolumeSlider: UIViewRepresentable {
 
 final class CustomMPVolumeView: MPVolumeView {
     var onSliderFound: ((UISlider) -> Void)?
+    private(set) var slider: UISlider?
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: 32)
+    }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        if let slider = subviews.first(where: { $0 is UISlider }) as? UISlider {
-            onSliderFound?(slider)
+        if let found = subviews.first(where: { $0 is UISlider }) as? UISlider {
+            if slider !== found {
+                slider = found
+                onSliderFound?(found)
+            }
         }
     }
 }

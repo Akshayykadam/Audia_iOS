@@ -30,14 +30,14 @@ struct TabHeaderView: View {
         HStack(alignment: .center) {
             Text(displayTitle)
                 .font(.satoshi(size: 26, weight: .bold))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(AudiaTheme.textPrimary)
             Spacer()
             HStack(spacing: 16) {
                 if let onSearch {
                     Button(action: onSearch) {
                         Image(systemName: "magnifyingglass")
-                            .font(.satoshi(size: 19, weight: .medium))
-                            .foregroundStyle(AudiaTheme.textSecondary)
+                            .font(.satoshi(size: 19, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Search")
@@ -46,8 +46,8 @@ struct TabHeaderView: View {
                 if let onHistory {
                     Button(action: onHistory) {
                         Image(systemName: "clock.arrow.circlepath")
-                            .font(.satoshi(size: 19, weight: .medium))
-                            .foregroundStyle(AudiaTheme.textSecondary)
+                            .font(.satoshi(size: 19, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("History")
@@ -56,8 +56,8 @@ struct TabHeaderView: View {
                 if let onAdd {
                     Button(action: onAdd) {
                         Image(systemName: "plus")
-                            .font(.satoshi(size: 20, weight: .medium))
-                            .foregroundStyle(AudiaTheme.textSecondary)
+                            .font(.satoshi(size: 20, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Add playlist")
@@ -65,8 +65,8 @@ struct TabHeaderView: View {
 
                 Button(action: onAccount) {
                     Image(systemName: "gearshape.fill")
-                        .font(.satoshi(size: 19, weight: .medium))
-                        .foregroundStyle(AudiaTheme.textSecondary)
+                        .font(.satoshi(size: 19, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Settings")

@@ -12,43 +12,14 @@ struct PlaybackControlsView: View {
     var accent: Color = .accentColor
     var showsShuffle: Bool = true
     var showsMore: Bool = false
+    var horizontalPadding: CGFloat = 16
     var onPlay: () -> Void
     var onShuffle: () -> Void = {}
     var onMore: () -> Void = {}
     var moreCustomView: AnyView? = nil
 
     var body: some View {
-        HStack(spacing: 14) {
-            if let moreCustomView {
-                moreCustomView
-            } else if showsMore {
-                Button(action: onMore) {
-                    Image(systemName: "ellipsis")
-                        .font(.satoshi(size: 17, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.textSecondary)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(AudiaTheme.surfaceVariant))
-                        .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("More options")
-            }
-
-            Spacer()
-
-            if showsShuffle {
-                Button(action: onShuffle) {
-                    Image(systemName: "shuffle")
-                        .font(.satoshi(size: 16, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.textSecondary)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(AudiaTheme.surfaceVariant))
-                        .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Shuffle")
-            }
-
+        HStack(spacing: 12) {
             Button(action: onPlay) {
                 HStack(spacing: 6) {
                     Image(systemName: "play.fill")
@@ -63,8 +34,38 @@ struct PlaybackControlsView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Play all")
+
+            if showsShuffle {
+                Button(action: onShuffle) {
+                    Image(systemName: "shuffle")
+                        .font(.satoshi(size: 16, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textSecondary)
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(AudiaTheme.surfaceVariant))
+                        .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Shuffle")
+            }
+
+            Spacer()
+
+            if let moreCustomView {
+                moreCustomView
+            } else if showsMore {
+                Button(action: onMore) {
+                    Image(systemName: "ellipsis")
+                        .font(.satoshi(size: 17, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textSecondary)
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(AudiaTheme.surfaceVariant))
+                        .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("More options")
+            }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, horizontalPadding)
         .padding(.top, 4)
     }
 }

@@ -83,9 +83,9 @@ struct SearchView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.satoshi(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.12), in: Circle())
+                    .background(AudiaTheme.surfaceVariant, in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
@@ -97,7 +97,7 @@ struct SearchView: View {
                     .focused($fieldFocused)
                     .submitLabel(.search)
                     .autocorrectionDisabled()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .onSubmit { submit(nil) }
                 if !viewModel.fieldText.isEmpty {
                     Button {
@@ -168,7 +168,7 @@ struct SearchView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Import \(linkType.serviceName) Playlist")
                         .font(.satoshi(.subheadline, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AudiaTheme.textPrimary)
                     Text("Tap to preview and add to your library")
                         .font(.satoshi(.caption))
                         .foregroundColor(AudiaTheme.textSecondary)
@@ -315,7 +315,7 @@ struct SearchView: View {
                     }
                 }
             }
-            .padding(.bottom, 96)
+            .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .scrollDismissesKeyboard(.immediately)
@@ -409,52 +409,16 @@ struct SearchView: View {
                         .padding(.leading, 16)
                 }
             }
-            .padding(.bottom, 96)
+            .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .scrollDismissesKeyboard(.immediately)
         .miniPlayerTracksScroll()
     }
 
-    private var horizontalHistoryPills: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(viewModel.searchHistory.prefix(8), id: \.query) { entry in
-                    Button {
-                        submit(entry.query)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.satoshi(size: 13, weight: .medium))
-                                .foregroundStyle(AudiaTheme.primary)
-                            Text(entry.query)
-                                .font(.satoshi(size: 14.5, weight: .medium))
-                                .foregroundStyle(AudiaTheme.textSecondary)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(Capsule().fill(AudiaTheme.surfaceVariant))
-                        .overlay(Capsule().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-        }
-    }
-
     private var searchResultsList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                if !viewModel.availableFilters.isEmpty {
-                    filterChips
-                }
-
-                if !viewModel.searchHistory.isEmpty {
-                    horizontalHistoryPills
-                }
-
                 if let hero = viewModel.heroArtist {
                     artistHeroCard(hero, songs: viewModel.heroSongs)
                         .padding(.horizontal, 16)
@@ -478,7 +442,7 @@ struct SearchView: View {
                     }
                 }
             }
-            .padding(.bottom, 96)
+            .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .scrollDismissesKeyboard(.immediately)
@@ -607,35 +571,6 @@ struct SearchView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 4)
         }
-    }
-
-    private var filterChips: some View {
-        FilterChipBar(
-            items: ["All Results"] + viewModel.availableFilters,
-            id: \.self,
-            title: { $0 },
-            isSelected: { filter in
-                if filter == "All Results" {
-                    return viewModel.selectedSectionFilter == nil && !viewModel.isShowingLibrary
-                }
-                return filter == "Library"
-                    ? viewModel.isShowingLibrary
-                    : viewModel.selectedSectionFilter == filter
-            },
-            onTap: { filter in
-                if filter == "All Results" {
-                    viewModel.selectedSectionFilter = nil
-                    viewModel.isShowingLibrary = false
-                } else if filter == "Library" {
-                    let willShow = !viewModel.isShowingLibrary
-                    viewModel.isShowingLibrary = willShow
-                    viewModel.selectedSectionFilter = nil
-                } else {
-                    viewModel.selectedSectionFilter = filter
-                    viewModel.isShowingLibrary = false
-                }
-            }
-        )
     }
 
     private var noResultsView: some View {

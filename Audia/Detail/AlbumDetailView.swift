@@ -275,6 +275,18 @@ struct AlbumDetailView: View {
         .miniPlayerTracksScroll()
         .navigationTitle(viewModel.album?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showMoreSheet = true }) {
+                    Image(systemName: "ellipsis")
+                        .font(.satoshi(size: 16, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("More options")
+            }
+        }
         .task {
             guard viewModel.isLoading else { return }
             await viewModel.load()
@@ -300,6 +312,7 @@ struct AlbumDetailView: View {
                 songList(for: album)
             }
         }
+        .appBottomClearance()
     }
 
     @ViewBuilder
@@ -345,16 +358,15 @@ struct AlbumDetailView: View {
             let metaParts = metaStrings(for: album)
             if !metaParts.isEmpty {
                 Text(metaParts.joined(separator: " • "))
-                    .font(.satoshi(.subheadline))
-                    .foregroundStyle(.tertiary)
+                    .font(.satoshi(.subheadline, weight: .medium))
+                    .foregroundStyle(AudiaTheme.textSecondary)
             }
 
-            // Action buttons: shuffle, play, more (matches playlist header)
+            // Action buttons: play and shuffle on left
             PlaybackControlsView(
-                showsMore: true,
+                showsMore: false,
                 onPlay: { playAll(album) },
-                onShuffle: { shufflePlay(album) },
-                onMore: { showMoreSheet = true }
+                onShuffle: { shufflePlay(album) }
             )
         }
         .padding(.vertical, 16)
@@ -423,6 +435,24 @@ struct AlbumMoreSheet: View {
     var onToggleSave: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var downloadManager = DownloadManager.shared
+
+    private var isAlbumDownloading: Bool {
+        guard !album.songs.isEmpty else { return false }
+        return album.songs.contains { song in
+            if case .downloading = downloadManager.state(for: song.videoId) {
+                return true
+            }
+            return false
+        }
+    }
+
+    private var isAlbumDownloaded: Bool {
+        guard !album.songs.isEmpty else { return false }
+        return album.songs.allSatisfy { song in
+            downloadManager.state(for: song.videoId) == .completed
+        }
+    }
 
     var body: some View {
         SheetChrome {
@@ -445,13 +475,27 @@ struct AlbumMoreSheet: View {
                     dismiss()
                 }
                 Divider()
-                MenuRow(
-                    icon: "square.and.arrow.down",
-                    title: "Download",
-                    subtitle: "Download all songs for offline playback"
-                ) {
-                    downloadAll()
-                    dismiss()
+                if isAlbumDownloading {
+                    MenuRow(
+                        icon: "arrow.down.circle.fill",
+                        title: "Downloading…",
+                        subtitle: "Downloading songs for offline playback"
+                    ) { }
+                } else if isAlbumDownloaded {
+                    MenuRow(
+                        icon: "checkmark.circle.fill",
+                        title: "Downloaded",
+                        subtitle: "All songs downloaded"
+                    ) { }
+                } else {
+                    MenuRow(
+                        icon: "square.and.arrow.down",
+                        title: "Download",
+                        subtitle: "Download all songs for offline playback"
+                    ) {
+                        downloadAll()
+                        dismiss()
+                    }
                 }
                 Divider()
                 MenuRow(

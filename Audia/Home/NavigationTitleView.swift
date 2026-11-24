@@ -30,7 +30,7 @@ struct NavigationTitleView: View {
                         }
                         Text(LocalizedStringKey(title))
                             .font(.satoshi(size: 21, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AudiaTheme.textPrimary)
                             .lineLimit(1)
                     }
 

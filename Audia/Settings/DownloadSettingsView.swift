@@ -38,6 +38,7 @@ struct DownloadSettingsView: View {
         }
         .navigationTitle("Download Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .appListBottomClearance()
         .miniPlayerTracksScroll()
         .task { await refreshStats() }
         .onChange(of: downloadManager.persistedDownloadCount) { _, _ in

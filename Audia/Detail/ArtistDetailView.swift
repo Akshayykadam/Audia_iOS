@@ -327,6 +327,7 @@ struct ArtistDetailView: View {
             if let artist = viewModel.artist {
                 Text(artist.name)
                     .font(.satoshi(.headline))
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .lineLimit(1)
                     .opacity(barProgress)
             }
@@ -335,7 +336,7 @@ struct ArtistDetailView: View {
 
             topBarCopyLinkButton
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(
             Color(.systemBackground)
@@ -367,8 +368,7 @@ struct ArtistDetailView: View {
         .disabled(viewModel.artist == nil)
     }
 
-    /// Round top-bar button matching the back chevron: white with shadow over
-    /// the banner artwork, crossfading to `fadedColor` as the bar fills in.
+    /// Round top-bar button with dynamic material background adapting to the artwork underneath.
     private func topBarCircleButton(
         systemName: String,
         fadedColor: Color = .primary,
@@ -378,19 +378,20 @@ struct ArtistDetailView: View {
         Button(action: action, label: {
             ZStack {
                 Image(systemName: systemName)
-                    .font(.satoshi(.body, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                    .opacity(1 - barProgress)
-                Image(systemName: systemName)
-                    .font(.satoshi(.body, weight: .semibold))
-                    .foregroundStyle(fadedColor)
-                    .opacity(barProgress)
+                    .font(.satoshi(size: 16, weight: .semibold))
+                    .foregroundStyle(fadedColor == .primary ? AudiaTheme.textPrimary : fadedColor)
             }
-            .frame(width: 40, height: 40)
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .overlay(
+                Circle()
+                    .stroke(AudiaTheme.surfaceBorder.opacity(0.8), lineWidth: 0.8)
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+            .frame(width: 44, height: 44)
             .contentShape(Rectangle())
         })
-        .buttonStyle(.plain)
+        .buttonStyle(BouncyScaleButtonStyle(scale: 0.92))
         .accessibilityLabel(accessibilityLabel)
     }
 
@@ -453,6 +454,7 @@ struct ArtistDetailView: View {
                 }
             }
         }
+        .appBottomClearance()
     }
 
     @ViewBuilder
@@ -480,7 +482,7 @@ struct ArtistDetailView: View {
 
     private func headerBanner(for artist: ArtistDetailInfo, size: CGSize) -> some View {
         ZStack(alignment: .bottomLeading) {
-            Color.black
+            AudiaTheme.background
 
             AsyncImageView(
                 url: ArtworkURLs.sized(artist.thumbnailUrl, width: 1200, height: 1200),
@@ -505,9 +507,9 @@ struct ArtistDetailView: View {
                 stops: [
                     .init(color: .clear, location: 0.0),
                     .init(color: .clear, location: 0.35),
-                    .init(color: Color.black.opacity(0.35), location: 0.60),
-                    .init(color: Color.black.opacity(0.85), location: 0.88),
-                    .init(color: Color.black, location: 1.0)
+                    .init(color: AudiaTheme.background.opacity(0.35), location: 0.60),
+                    .init(color: AudiaTheme.background.opacity(0.85), location: 0.88),
+                    .init(color: AudiaTheme.background, location: 1.0)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -515,10 +517,10 @@ struct ArtistDetailView: View {
 
             Text(artist.name)
                 .font(.satoshi(size: 46, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(AudiaTheme.textPrimary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.75)
-                .shadow(color: .black.opacity(0.4), radius: 6, y: 2)
+                .shadow(color: AudiaTheme.background.opacity(0.4), radius: 6, y: 2)
                 .padding(.horizontal, horizontalSizeClass == .regular ? 32 : 20)
                 .padding(.bottom, 24)
         }
@@ -574,7 +576,7 @@ struct ArtistDetailView: View {
 
                         Text(song.duration.formattedDuration)
                             .font(.satoshi(.caption))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(AudiaTheme.textSecondary)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)

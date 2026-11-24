@@ -4,6 +4,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 protocol SettingsOption: CaseIterable, Hashable, Identifiable, RawRepresentable where RawValue == String {
     var displayName: String { get }
@@ -73,7 +76,12 @@ struct AccentPreset: Identifiable, Hashable {
     }
 
     static let all: [AccentPreset] = [
-        AccentPreset(name: "White", color: Color.white),
+        AccentPreset(
+            name: "White",
+            color: Color(uiColor: UIColor { traits in
+                traits.userInterfaceStyle == .light ? UIColor(white: 0.1, alpha: 1.0) : UIColor.white
+            })
+        ),
         AccentPreset(name: "Audia Green", color: Color(red: 0.133, green: 0.835, blue: 0.380)),
         AccentPreset(name: "Green", color: Color(red: 0.18, green: 0.72, blue: 0.32)),
         AccentPreset(name: "Red", color: Color(red: 0.91, green: 0.22, blue: 0.22)),
@@ -101,6 +109,10 @@ final class SettingsStore {
     }
 
     var accentColor: Color = AccentPreset.all[0].color
+
+    var effectiveAccentColor: Color {
+        accentColor
+    }
 
     var accentName: String {
         didSet {
@@ -322,14 +334,14 @@ final class SettingsStore {
 
     private init() {
         let d = Self.defaults
-        themeMode = Self.loadEnum(Keys.themeMode, default: .dark)
+        themeMode = Self.loadEnum(Keys.themeMode, default: .system)
         accentColor = AccentPreset.all
             .first { $0.name == (d.string(forKey: Keys.accentName) ?? AccentPreset.all[0].name) }?
             .color ?? AccentPreset.all[0].color
         accentName = d.string(forKey: Keys.accentName) ?? AccentPreset.all[0].name
         playerBackgroundStyle = Self.loadEnum(Keys.playerBackgroundStyle, default: .dynamic)
-        // Migrated when Explore took index 2 (was Search): stored 2 → 3.
-        defaultTab = Self.load(Keys.defaultTab, default: 0)
+        defaultTab = 0
+        Self.defaults.set(0, forKey: Keys.defaultTab)
         equalizerEnabled = Self.load(Keys.equalizerEnabled, default: false)
         equalizerPresetID = Self.loadString(Keys.equalizerPresetID, default: "flat")
         if let saved = d.array(forKey: Keys.equalizerGains) as? [Double], saved.count == equalizerFrequencies.count {

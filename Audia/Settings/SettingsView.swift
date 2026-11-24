@@ -8,9 +8,12 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.settingsStore) private var settings
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var downloadManager = DownloadManager.shared
     @State private var storageBytes: Int64 = 0
     @State private var trackCount = 0
+    @State private var showCleanupConfirmation = false
+    @State private var isCleaningUp = false
 
     private var storageLabel: String {
         ByteCountFormatter.string(fromByteCount: storageBytes, countStyle: .file)
@@ -24,16 +27,16 @@ struct SettingsView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.satoshi(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.12), in: Circle())
+                    .background(AudiaTheme.surfaceVariant, in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
 
             Text("Settings")
                 .font(.satoshi(size: 26, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(AudiaTheme.textPrimary)
 
             Spacer()
         }
@@ -44,7 +47,7 @@ struct SettingsView: View {
     private func sectionHeader(_ text: String) -> some View {
         Text(text)
             .font(.satoshi(size: 15, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(AudiaTheme.textPrimary)
             .textCase(nil)
     }
 
@@ -60,7 +63,44 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             customTopBar
 
-            List {
+            ScrollViewReader { proxy in
+                List {
+                Section {
+                    SettingsToggleRow(
+                        "Dark Mode",
+                        icon: "moon.fill",
+                        isOn: Binding(
+                            get: {
+                                if settings.themeMode == .system {
+                                    return colorScheme == .dark
+                                }
+                                return settings.themeMode == .dark
+                            },
+                            set: { isDark in
+                                settings.themeMode = isDark ? .dark : .light
+                            }
+                        )
+                    )
+                    SettingsToggleRow(
+                        "Match System",
+                        icon: "circle.lefthalf.filled",
+                        isOn: Binding(
+                            get: { settings.themeMode == .system },
+                            set: { isSystem in
+                                if isSystem {
+                                    settings.themeMode = .system
+                                } else {
+                                    settings.themeMode = colorScheme == .dark ? .dark : .light
+                                }
+                            }
+                        )
+                    )
+                } header: {
+                    sectionHeader("Appearance")
+                } footer: {
+                    sectionFooter("Switch between light and dark mode, or follow your device settings.")
+                }
+
                 Section {
                     SettingsNavigationRow("Equalizer", icon: "slider.vertical.3") {
                         EqualizerView()
@@ -69,6 +109,16 @@ struct SettingsView: View {
                     sectionHeader("Equalizer")
                 } footer: {
                     sectionFooter("Adjust the sound with presets or a custom curve.")
+                }
+
+                Section {
+                    SettingsNavigationRow("Link Opening & Extensions", icon: "arrow.up.forward.app.fill") {
+                        SafariExtensionGuideView()
+                    }
+                } header: {
+                    sectionHeader("Link Opening")
+                } footer: {
+                    sectionFooter("Open YouTube Music links directly in Audia from Safari or the iOS Share Sheet.")
                 }
 
                 Section {
@@ -109,17 +159,56 @@ struct SettingsView: View {
                     SettingsToggleRow("Wi-Fi Only", icon: "wifi", isOn: $settings.wifiOnlyDownloads)
                     SettingsToggleRow("Auto-Download on Like", icon: "heart.fill", isOn: $settings.autoDownloadOnLike)
                     SettingsToggleRow("Auto-Download New Episodes", icon: "antenna.radiowaves.left.and.right", isOn: $settings.autoDownloadNewEpisodes)
+
+                    Button(action: {
+                        showCleanupConfirmation = true
+                    }) {
+                        HStack {
+                            Label("Cleanup Downloads", systemImage: "trash")
+                                .font(.satoshi(size: 16, weight: .medium))
+                                .foregroundStyle(trackCount > 0 || storageBytes > 0 ? AudiaTheme.textPrimary : AudiaTheme.textMuted)
+                            Spacer()
+                            if isCleaningUp {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                        }
+                    }
+                    .disabled(isCleaningUp || (trackCount == 0 && storageBytes == 0))
                 } header: {
                     sectionHeader("Downloads")
                 } footer: {
                     sectionFooter("Auto-download saves liked songs for offline playback. Wi-Fi Only blocks downloads on cellular data.")
                 }
+                .id("downloads")
             }
             .scrollContentBackground(.hidden)
+            .appListBottomClearance()
+            .onAppear {
+                if AppRouter.shared.settingsTargetSection == "downloads" {
+                    proxy.scrollTo("downloads", anchor: .top)
+                    AppRouter.shared.settingsTargetSection = nil
+                }
+            }
+        }
         }
         .audiaScreenBackground()
         .tint(AudiaTheme.primary)
         .toolbar(.hidden, for: .navigationBar)
+        .destructiveConfirm(
+            "Cleanup Downloads?",
+            isPresented: $showCleanupConfirmation,
+            message: Text("This will permanently remove \(trackCount > 0 ? "\(trackCount) downloaded songs" : "offline tracks") and free up \(storageLabel) on this device."),
+            confirmTitle: "Cleanup",
+            onConfirm: {
+                Task {
+                    isCleaningUp = true
+                    await downloadManager.deleteAll()
+                    await refreshStats()
+                    isCleaningUp = false
+                }
+            }
+        )
         .task { await refreshStats() }
         .onChange(of: downloadManager.persistedDownloadCount) { _, _ in
             Task { await refreshStats() }

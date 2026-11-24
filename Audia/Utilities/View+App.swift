@@ -32,6 +32,59 @@ extension View {
     func appSheetChrome(_ detents: Set<PresentationDetent> = [.medium, .large]) -> some View {
         presentationDetents(detents)
             .presentationDragIndicator(.visible)
+            .presentationBackground(AudiaTheme.sheetBackground)
             .font(.satoshi(.body))
+    }
+
+    /// Dynamic bottom clearance for scrollable views, ensuring content can be scrolled
+    /// past floating bottom chrome (AudiaSolidTabBar and MiniPlayerBarView).
+    func appBottomClearance(isRootTab: Bool = false) -> some View {
+        modifier(AppBottomClearanceModifier(isRootTab: isRootTab))
+    }
+
+    /// Dynamic bottom clearance for `List` containers, inserting an invisible bottom safe area inset.
+    func appListBottomClearance(isRootTab: Bool = false) -> some View {
+        modifier(AppListBottomClearanceModifier(isRootTab: isRootTab))
+    }
+}
+
+/// Dynamic bottom clearance for scrollable views (ScrollView / LazyVStack), ensuring content
+/// can always be scrolled comfortably past the floating MiniPlayer and TabBar.
+struct AppBottomClearanceModifier: ViewModifier {
+    var isRootTab: Bool = false
+    @ObservedObject private var router = AppRouter.shared
+
+    func body(content: Content) -> some View {
+        let isRoot = isRootTab && router.isAtRootTab
+        let hasMiniPlayer = NowPlaying.shared.isBarPresented
+        let clearance: CGFloat = isRoot
+            ? (hasMiniPlayer ? 190 : 110)
+            : (hasMiniPlayer ? 140 : 44)
+
+        content
+            .padding(.bottom, clearance)
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: clearance)
+    }
+}
+
+/// Dynamic bottom clearance for `List` containers, inserting an invisible bottom safe area inset.
+struct AppListBottomClearanceModifier: ViewModifier {
+    var isRootTab: Bool = false
+    @ObservedObject private var router = AppRouter.shared
+
+    func body(content: Content) -> some View {
+        let isRoot = isRootTab && router.isAtRootTab
+        let hasMiniPlayer = NowPlaying.shared.isBarPresented
+        let clearance: CGFloat = isRoot
+            ? (hasMiniPlayer ? 190 : 110)
+            : (hasMiniPlayer ? 140 : 44)
+
+        content
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear
+                    .frame(height: clearance)
+                    .allowsHitTesting(false)
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: clearance)
     }
 }

@@ -32,6 +32,7 @@ final class HistoryView {
         do {
             let raw = try await db.fetchHistory(limit: 100)
             groupedEntries = Self.groupByDate(raw)
+            WidgetBridge.shared.syncHistoryEntries(raw)
         } catch {
             Log.historyView.error("Failed to load local history: \(error)")
         }

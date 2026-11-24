@@ -199,7 +199,7 @@ struct SongRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(song.title)
                     .font(.satoshi(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AudiaTheme.textPrimary)
                     .lineLimit(1)
 
                 Text(song.subtitleLine(duration: durations.effectiveDuration(known: song.duration)))

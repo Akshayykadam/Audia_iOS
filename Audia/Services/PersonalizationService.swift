@@ -19,58 +19,197 @@ actor PersonalizationService {
         var pickedItems: [YTItem] = []
         var seenIds = Set<String>()
 
-        // 1. Gather user interest seeds: Liked songs + Top played songs
-        let likedSongs = (try? await db.fetchLikedSongs()) ?? []
-        let topSongs = (try? await db.fetchTopSongs(limit: 25)) ?? []
-        let recentSongs = (try? await db.fetchRecentSongs(days: 30, limit: 20)) ?? []
+        // 1. Gather all user listening data from local database
+        let likedSongs = (try? await db.fetchAllLikedSongs(sort: .mostPlayed)) ?? []
+        let topSongs = (try? await db.fetchTopSongs(limit: 50)) ?? []
+        let recentSongs = (try? await db.fetchRecentSongs(days: 30, limit: 30)) ?? []
+        let librarySongs = (try? await db.fetchLibrarySongs(limit: 100)) ?? []
+        let historySongs = ((try? await db.fetchHistory(limit: 50)) ?? []).compactMap(\.song)
 
-        // Seed tracks that reflect true user taste (prioritizing liked & top played)
-        var seedSongs: [SongEntity] = []
-        var seedIds = Set<String>()
-        for song in (likedSongs + topSongs) {
-            if seedIds.insert(song.id).inserted {
-                seedSongs.append(song)
+        // Deduplicate into allUserSongs while preserving prioritization
+        var allUserSongs: [SongEntity] = []
+        var userSongIds = Set<String>()
+        for song in likedSongs + topSongs + recentSongs + historySongs + librarySongs {
+            if userSongIds.insert(song.id).inserted {
+                allUserSongs.append(song)
             }
         }
 
-        // If user has no liked/top songs yet, use recent songs (shuffled) as seeds
-        if seedSongs.isEmpty && !recentSongs.isEmpty {
-            seedSongs = recentSongs.shuffled()
+        guard !allUserSongs.isEmpty else {
+            return .quickPicks(items: [])
         }
 
-        // 2. Discover songs based on user interest using radio recommendations
-        if !seedSongs.isEmpty {
-            let seeds = seedSongs.shuffled().prefix(2)
-            for seed in seeds {
-                guard pickedItems.count < target else { break }
-                if let radio = try? await fetchRadio(videoId: seed.id), !radio.songs.isEmpty {
-                    for song in radio.songs {
-                        if seenIds.insert(song.videoId).inserted {
-                            pickedItems.append(.song(song))
-                            if pickedItems.count >= target { break }
+        // Check if user is in "first launch" mode (sparse history with fewer than 4 songs)
+        let isFirstLaunch = allUserSongs.count < 4
+
+        if isFirstLaunch {
+            // First Launch Experience:
+            // 1. Add user's 1-3 seed songs first
+            for song in allUserSongs {
+                if seenIds.insert(song.id).inserted {
+                    pickedItems.append(.song(SongItem(entity: song)))
+                }
+            }
+
+            // 2. Fetch radio recommendations distributed evenly across all available seed songs
+            let needed = target - pickedItems.count
+            if needed > 0 {
+                let slotsPerSeed = max(1, (needed + allUserSongs.count - 1) / allUserSongs.count)
+                var perSeedRadios: [[SongItem]] = []
+
+                for seed in allUserSongs {
+                    if let radio = try? await fetchRadio(videoId: seed.id), !radio.songs.isEmpty {
+                        perSeedRadios.append(radio.songs)
+                    }
+                }
+
+                // Interleave recommendations from seeds so no single seed dominates
+                for slot in 0..<slotsPerSeed {
+                    for radioSongs in perSeedRadios {
+                        guard pickedItems.count < target else { break }
+                        if slot < radioSongs.count {
+                            let song = radioSongs[slot]
+                            if seenIds.insert(song.videoId).inserted {
+                                pickedItems.append(.song(song))
+                            }
                         }
+                    }
+                    if pickedItems.count >= target { break }
+                }
+
+                // Fallback fill if still below target
+                if pickedItems.count < target {
+                    for radioSongs in perSeedRadios {
+                        for song in radioSongs {
+                            guard pickedItems.count < target else { break }
+                            if seenIds.insert(song.videoId).inserted {
+                                pickedItems.append(.song(song))
+                            }
+                        }
+                        if pickedItems.count >= target { break }
                     }
                 }
             }
-        }
+        } else {
+            // Established User Experience (YouTube Music algorithm):
+            // Quick Picks reflects the user's broad taste across all their favorite artists/genres.
+            // Listening to 1 song of a different language NEVER replaces all other languages.
 
-        // 3. Blend in user's favorite / top songs
-        if pickedItems.count < target && !seedSongs.isEmpty {
-            for song in seedSongs.shuffled() {
-                if seenIds.insert(song.id).inserted {
-                    pickedItems.append(.song(SongItem(entity: song)))
-                    if pickedItems.count >= target { break }
+            // A. Score each song based on user affinity signals
+            var songScores: [String: Double] = [:]
+            let recentIds = recentSongs.map(\.id)
+
+            for song in allUserSongs {
+                var score: Double = 0
+                if song.liked { score += 50.0 }
+                let playMinutes = Double(song.totalPlayTime) / 60_000.0
+                score += min(playMinutes * 2.0, 50.0)
+                if song.inLibrary != nil { score += 15.0 }
+                if let recentIdx = recentIds.firstIndex(of: song.id) {
+                    score += max(0.0, 20.0 - Double(recentIdx))
+                }
+                songScores[song.id] = score
+            }
+
+            // B. Group songs by artist
+            var artistGroups: [String: [SongEntity]] = [:]
+            for song in allUserSongs {
+                let raw = song.artistName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let artistKey = raw.isEmpty ? "Various Artists" : raw
+                artistGroups[artistKey, default: []].append(song)
+            }
+
+            // Sort each artist's songs by score descending
+            for (artist, songs) in artistGroups {
+                artistGroups[artist] = songs.sorted {
+                    (songScores[$0.id] ?? 0) > (songScores[$1.id] ?? 0)
                 }
             }
-        }
 
-        // 4. Fallback if still under target (e.g. offline and no radio):
-        if pickedItems.count < target && !recentSongs.isEmpty {
-            // Shuffle so the single last-played song is not fixed at index 0 (Keep Listening already features it)
-            for song in recentSongs.shuffled() {
+            // C. Rank artists by total affinity score
+            struct ArtistAffinity {
+                let name: String
+                let score: Double
+                let songs: [SongEntity]
+            }
+
+            var artistAffinities: [ArtistAffinity] = artistGroups.map { name, songs in
+                let totalScore = songs.reduce(0.0) { $0 + (songScores[$1.id] ?? 0) }
+                return ArtistAffinity(name: name, score: totalScore, songs: songs)
+            }
+            artistAffinities.sort { $0.score > $1.score }
+
+            // D. Round-robin selection across artists to enforce diversity
+            // Round 1: Top 1 song from each artist (sorted by artist affinity)
+            // Round 2: Top 2 song from each artist
+            // Round 3: Top 3 song from each artist
+            var selectedSongs: [SongEntity] = []
+            var selectedIds = Set<String>()
+
+            // Offer variety on pull-to-refresh while preserving artist diversity
+            for round in 0..<4 {
+                for artist in artistAffinities {
+                    guard selectedSongs.count < target else { break }
+                    let available = artist.songs.filter { !selectedIds.contains($0.id) }
+                    guard !available.isEmpty else { continue }
+                    // Take from top available tracks (prefix 2 chosen with slight variety on refresh)
+                    let candidatePool = Array(available.prefix(2))
+                    let chosen = candidatePool.randomElement() ?? available[0]
+                    if selectedIds.insert(chosen.id).inserted {
+                        selectedSongs.append(chosen)
+                    }
+                }
+                if selectedSongs.count >= target { break }
+            }
+
+            // Append selected songs
+            for song in selectedSongs {
                 if seenIds.insert(song.id).inserted {
                     pickedItems.append(.song(SongItem(entity: song)))
-                    if pickedItems.count >= target { break }
+                }
+            }
+
+            // E. If we still need more songs to reach `target` (e.g. user has 6 songs total across 3 artists):
+            // Pad with capped, interleaved radio discovery across multiple top artists!
+            if pickedItems.count < target {
+                let needed = target - pickedItems.count
+                let seedCandidates = Array(artistAffinities.prefix(4).compactMap { $0.songs.first })
+                if !seedCandidates.isEmpty {
+                    let maxPerRadio = max(1, (needed + seedCandidates.count - 1) / seedCandidates.count)
+                    var discoveryRadios: [[SongItem]] = []
+
+                    for seed in seedCandidates {
+                        if let radio = try? await fetchRadio(videoId: seed.id), !radio.songs.isEmpty {
+                            discoveryRadios.append(radio.songs)
+                        }
+                    }
+
+                    // Interleave discovery songs across the different artist radios
+                    for slot in 0..<maxPerRadio {
+                        for radioSongs in discoveryRadios {
+                            guard pickedItems.count < target else { break }
+                            if slot < radioSongs.count {
+                                let song = radioSongs[slot]
+                                if seenIds.insert(song.videoId).inserted {
+                                    pickedItems.append(.song(song))
+                                }
+                            }
+                        }
+                        if pickedItems.count >= target { break }
+                    }
+
+                    // Fallback fill if still needed
+                    if pickedItems.count < target {
+                        for radioSongs in discoveryRadios {
+                            for song in radioSongs {
+                                guard pickedItems.count < target else { break }
+                                if seenIds.insert(song.videoId).inserted {
+                                    pickedItems.append(.song(song))
+                                }
+                            }
+                            if pickedItems.count >= target { break }
+                        }
+                    }
                 }
             }
         }
@@ -81,7 +220,7 @@ actor PersonalizationService {
 
         let chosen = Array(pickedItems.prefix(target))
         let section = HomeSection.quickPicks(items: chosen)
-        let entitiesToEnrich = seedSongs.prefix(target)
+        let entitiesToEnrich = allUserSongs.prefix(target)
         let task = Task { [weak self] in
             guard let self else { return }
             await self.enrichLikedSongs(songs: Array(entitiesToEnrich))
@@ -123,7 +262,7 @@ actor PersonalizationService {
     }
 
     private func enrichLikedSongs(songs: [SongEntity]) async {
-        for entity in songs where entity.title.isEmpty {
+        for entity in songs where entity.title.isEmpty || entity.artistName == nil || entity.artistName?.isEmpty == true {
             guard let metadata = try? await fetchSongMetadata(videoId: entity.id),
                   !metadata.title.isEmpty else { continue }
             let enriched = SongEntity(sync: SyncSong.merging(entity.toSync(), with: metadata))

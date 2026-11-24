@@ -35,11 +35,11 @@ struct MiniPlayerBarView: View {
     }
 
     private var barHeight: CGFloat {
-        64
+        72
     }
 
     private var artworkSize: CGFloat {
-        48
+        54
     }
 
     private var titleColor: Color {
@@ -63,12 +63,12 @@ struct MiniPlayerBarView: View {
         .frame(maxWidth: .infinity)
         .background(
             Capsule()
-                .fill(Color(white: 0.08))
+                .fill(AudiaTheme.surface)
         )
         .overlay(alignment: .bottom) { progressLine }
         .clipShape(Capsule())
         .overlay(Capsule().stroke(AudiaTheme.surfaceBorder, lineWidth: 1.5))
-        .shadow(color: Color.black, radius: 14, y: 5)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.08), radius: 14, y: 5)
         .padding(.horizontal, 16)
         .onChange(of: np.videoId) { _, _ in
             dragOffset = 0
@@ -130,7 +130,7 @@ struct MiniPlayerBarView: View {
                     MarqueeText(
                         text: song.title,
                         font: .satoshi(size: 16, weight: .semibold),
-                        frameHeight: 22,
+                        frameHeight: 24,
                         textColor: titleColor
                     )
                 }
@@ -143,7 +143,7 @@ struct MiniPlayerBarView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, 8)
+        .padding(.leading, 10)
         .padding(.trailing, 14)
         .frame(width: width, alignment: .leading)
         .contentShape(Rectangle())
@@ -173,10 +173,10 @@ struct MiniPlayerBarView: View {
             ZStack {
                 Circle()
                     .fill(AudiaTheme.primaryLight)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 44, height: 44)
                 Image(systemName: np.isPlaying ? "pause.fill" : "play.fill")
                     .contentTransition(.symbolEffect(.replace))
-                    .font(.satoshi(size: 16, weight: .bold))
+                    .font(.satoshi(size: 18, weight: .bold))
                     .foregroundStyle(AudiaTheme.onPrimary)
             }
         }
@@ -190,9 +190,9 @@ struct MiniPlayerBarView: View {
             np.playNext()
         }) {
             Image(systemName: "forward.end.fill")
-                .font(.satoshi(size: 18, weight: .semibold))
+                .font(.satoshi(size: 19, weight: .semibold))
                 .foregroundStyle(AudiaTheme.textSecondary)
-                .frame(width: 30, height: 30)
+                .frame(width: 36, height: 36)
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.86))
         .accessibilityLabel("Next song")
@@ -336,10 +336,10 @@ private struct MiniArtworkView: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Color.white.opacity(0.12)
+                AudiaTheme.surfaceVariant
                 Image(systemName: "music.note")
                     .font(.satoshi(size: 20))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(AudiaTheme.textMuted)
             }
         }
         .onAppear { load() }

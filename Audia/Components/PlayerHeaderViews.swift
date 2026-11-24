@@ -25,7 +25,7 @@ struct PlayerTitleBlock: View {
             if !artist.isEmpty {
                 Text(artist)
                     .font(.satoshi(.subheadline))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(AudiaTheme.textSecondary)
                     .lineLimit(1)
             }
         }
@@ -36,7 +36,7 @@ struct PlayerTitleBlock: View {
 struct PlayerLikeButton: View {
     var isLiked: Bool
     var activeColor: Color = .red
-    var inactiveColor: Color = .white
+    var inactiveColor: Color = AudiaTheme.textSecondary
     var fontSize: CGFloat = 17
     let onToggle: () -> Void
 
@@ -52,7 +52,7 @@ struct PlayerLikeButton: View {
 
 /// White ⋮ button for player surfaces. The options sheet stays owned by the caller.
 struct PlayerOptionsButton: View {
-    var color: Color = .white
+    var color: Color = AudiaTheme.textPrimary
     let action: () -> Void
 
     var body: some View {

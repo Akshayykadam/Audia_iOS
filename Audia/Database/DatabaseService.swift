@@ -373,6 +373,16 @@ extension DatabaseService {
         }
     }
 
+    /// All library songs known locally (liked, imported, downloaded, played)
+    func fetchLibrarySongs(limit: Int = 100) async throws -> [SongEntity] {
+        try await dbPool.read { db in
+            try SongEntity
+                .order(Column("total_play_time").desc, Column("modify_date").desc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
     func fetchTopSongs(limit: Int) async throws -> [SongEntity] {
         try await dbPool.read { db in
             try SongEntity.fetchAll(db, sql: """

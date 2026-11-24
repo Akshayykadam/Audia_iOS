@@ -52,6 +52,7 @@ struct PlayerSettingsView: View {
         .tint(AudiaTheme.primary)
         .navigationTitle("Player")
         .navigationBarTitleDisplayMode(.inline)
+        .appListBottomClearance()
         .miniPlayerTracksScroll()
     }
 }

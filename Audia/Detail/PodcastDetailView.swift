@@ -473,6 +473,7 @@ struct PodcastDetailView: View {
                 episodeList(for: podcast)
             }
         }
+        .appBottomClearance()
     }
 
     @ViewBuilder
@@ -499,7 +500,7 @@ struct PodcastDetailView: View {
             if !podcast.episodes.isEmpty {
                 Text("\(podcast.episodes.count) episode\(podcast.episodes.count != 1 ? "s" : "")")
                     .font(.satoshi(.subheadline))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(AudiaTheme.textSecondary)
             }
 
             if let desc = podcast.descriptionText, !desc.isEmpty {
@@ -776,7 +777,7 @@ private struct EpisodeRowView: View {
                         }
                         Text(episode.metaLine)
                             .font(.satoshi(.caption))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(AudiaTheme.textSecondary)
                             .lineLimit(1)
                     }
                     .onTapGesture(perform: onTap)

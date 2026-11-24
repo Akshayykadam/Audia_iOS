@@ -397,6 +397,16 @@ struct PlaylistDetailView: View {
     @ObservedObject private var likeStore = LikeStore.shared
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @State private var scrollOffset: CGFloat = 0
+    private static let barFadeStart: CGFloat = 160
+    private static let barFadeDistance: CGFloat = 60
+    private static let iPadBannerHeight: CGFloat = 400
+
+    private var barProgress: CGFloat {
+        min(max((scrollOffset - Self.barFadeStart) / Self.barFadeDistance, 0), 1)
+    }
 
     init(playlistId: String) {
         self.playlistId = playlistId
@@ -413,32 +423,34 @@ struct PlaylistDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            DetailStateContainer(
-                isLoading: viewModel.isLoading,
-                error: viewModel.error,
-                data: viewModel.playlist,
-                noun: "playlist",
-                emptyIcon: "music.note.list"
-            ) { playlist in
-                playlistContent(for: playlist)
-            }
-        }
-        .refreshable {
-            await viewModel.load()
-        }
-        .scrollDisabled(viewModel.isLoading || viewModel.error != nil || viewModel.playlist == nil)
-        .miniPlayerTracksScroll()
-        .navigationTitle(viewModel.playlist?.title ?? "")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if isEditable {
-                ToolbarItem(placement: .primaryAction) {
-                                        Button(action: { showAddSongs = true }, label: {
-                        Image(systemName: "plus")
-                    })
+        ZStack(alignment: .top) {
+            ScrollView {
+                DetailStateContainer(
+                    isLoading: viewModel.isLoading,
+                    error: viewModel.error,
+                    data: viewModel.playlist,
+                    noun: "playlist",
+                    emptyIcon: "music.note.list"
+                ) { playlist in
+                    playlistContent(for: playlist)
                 }
             }
+            .refreshable {
+                await viewModel.load()
+            }
+            .scrollDisabled(viewModel.isLoading || viewModel.error != nil || viewModel.playlist == nil)
+            .miniPlayerTracksScroll()
+            .onScrollGeometryChange(
+                for: CGFloat.self,
+                of: { $0.contentOffset.y },
+                action: { _, newOffset in
+                    scrollOffset = newOffset
+                }
+            )
+            .ignoresSafeArea(edges: .top)
+            .toolbar(.hidden, for: .navigationBar)
+
+            customTopBar
         }
         .sheet(isPresented: $showAddSongs) {
             AddSongToPlaylistView(playlistId: playlistId) {
@@ -479,7 +491,125 @@ struct PlaylistDetailView: View {
         } message: {
             Text("Are you sure you want to delete this playlist?")
         }
+        .textPrompt(
+            "Rename Playlist",
+            isPresented: $showRenameAlert,
+            placeholder: "Playlist name",
+            text: $renameText,
+            okTitle: "Rename"
+        ) {
+            let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty, name != (viewModel.playlist?.title ?? "") else { return }
+            Task {
+                let pid = viewModel.playlist?.playlistId ?? playlistId
+                try? await SyncBridge.mutations.renamePlaylist(
+                    playlistId: pid,
+                    newName: name
+                )
+                await viewModel.load()
+            }
+        }
         .audiaScreenBackground()
+    }
+
+    private var customTopBar: some View {
+        HStack(spacing: 8) {
+            topBarBackButton
+
+            if let playlist = viewModel.playlist {
+                Text(playlist.title)
+                    .font(.satoshi(.headline))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .lineLimit(1)
+                    .opacity(barProgress)
+            }
+
+            Spacer(minLength: 0)
+
+            topBarOptionsMenu
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Color(.systemBackground)
+                .opacity(barProgress)
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
+        )
+        .overlay(alignment: .bottom) {
+            Divider()
+                .opacity(barProgress)
+        }
+    }
+
+    private var topBarBackButton: some View {
+        topBarCircleButton(
+            systemName: "chevron.left",
+            accessibilityLabel: "Back",
+            action: { dismiss() }
+        )
+    }
+
+    private var topBarOptionsMenu: some View {
+        Group {
+            if let playlist = viewModel.playlist {
+                Menu {
+                    PlaylistMenuActionsView(
+                        playlist: playlist,
+                        onEdit: {
+                            renameText = playlist.title
+                            showRenameAlert = true
+                        },
+                        onDelete: viewModel.autoRoute == nil ? {
+                            showDeleteAlert = true
+                        } : nil,
+                        onAddSongs: isEditable ? {
+                            showAddSongs = true
+                        } : nil
+                    )
+                } label: {
+                    ZStack {
+                        Image(systemName: "ellipsis")
+                            .font(.satoshi(size: 16, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
+                    }
+                    .frame(width: 36, height: 36)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(AudiaTheme.surfaceBorder.opacity(0.8), lineWidth: 0.8)
+                    )
+                    .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                }
+            }
+        }
+    }
+
+    private func topBarCircleButton(
+        systemName: String,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action, label: {
+            ZStack {
+                Image(systemName: systemName)
+                    .font(.satoshi(size: 16, weight: .semibold))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+            }
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .overlay(
+                Circle()
+                    .stroke(AudiaTheme.surfaceBorder.opacity(0.8), lineWidth: 0.8)
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        })
+        .buttonStyle(BouncyScaleButtonStyle(scale: 0.92))
+        .accessibilityLabel(accessibilityLabel)
     }
 
     private func fetchEntity() async {
@@ -491,7 +621,50 @@ struct PlaylistDetailView: View {
     private func playlistContent(for playlist: PlaylistDetailInfo) -> some View {
         LazyVStack(spacing: 0) {
             header(for: playlist)
-                .padding(.bottom, 8)
+
+            VStack(alignment: .leading, spacing: 14) {
+                // Author row & metadata
+                HStack(spacing: 8) {
+                    if let authorName = playlist.authorName {
+                        if let authorId = playlist.authorBrowseId {
+                            NavigationLink(value: DetailRoute.artist(browseId: authorId)) {
+                                authorRow(name: authorName, avatarUrl: playlist.authorAvatarUrl)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            authorRow(name: authorName, avatarUrl: playlist.authorAvatarUrl)
+                        }
+
+                        Text("•")
+                            .font(.satoshi(.subheadline, weight: .medium))
+                            .foregroundStyle(AudiaTheme.textMuted)
+                    }
+
+                    let metaParts = metaStrings(for: playlist)
+                    if !metaParts.isEmpty {
+                        Text(metaParts.joined(separator: " • "))
+                            .font(.satoshi(.subheadline, weight: .medium))
+                            .foregroundStyle(AudiaTheme.textSecondary)
+                    }
+                }
+
+                if let desc = playlist.descriptionText, !desc.isEmpty {
+                    Text(desc)
+                        .font(.satoshi(.subheadline))
+                        .foregroundStyle(AudiaTheme.textSecondary)
+                        .lineLimit(3)
+                }
+
+                PlaybackControlsView(
+                    horizontalPadding: 0,
+                    onPlay: { playAll(playlist) },
+                    onShuffle: { shufflePlay(playlist) }
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, horizontalSizeClass == .regular ? 32 : DesignTokens.screenHPadding)
+            .padding(.top, 8)
+            .padding(.bottom, 16)
 
             if viewModel.autoRoute != nil {
                 sortControls
@@ -508,118 +681,106 @@ struct PlaylistDetailView: View {
                 songList(for: playlist)
             }
         }
+        .appBottomClearance()
     }
 
     @ViewBuilder
     private func header(for playlist: PlaylistDetailInfo) -> some View {
-        VStack(spacing: 12) {
-            // Playlist artwork
-            if let thumbnailUrl = playlist.thumbnailUrl {
-                HeroArtworkView(url: thumbnailUrl)
-            } else {
-                let songArtwork = playlist.songs.compactMap(\.thumbnailUrl)
-                if songArtwork.count >= 4 {
-                    ArtworkMosaicView(urls: songArtwork)
-                } else if let firstArtwork = songArtwork.first {
-                    HeroArtworkView(url: firstArtwork)
-                } else {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 200, height: 200)
-                        .overlay(
-                            Image(systemName: "music.note.list")
-                                .font(.satoshi(size: 60))
-                                .foregroundColor(.white.opacity(0.8))
-                        )
-                        .shadow(color: .black.opacity(0.2), radius: 12, y: 4)
-                }
-            }
-
-            // Playlist title
-            Text(playlist.title)
-                .font(.satoshi(.title2))
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-
-            // Metadata: song count | duration
-            let metaParts = metaStrings(for: playlist)
-            if !metaParts.isEmpty {
-                Text(metaParts.joined(separator: " | "))
-                    .font(.satoshi(.subheadline))
-                    .foregroundStyle(.tertiary)
-            }
-
-            // Author row: avatar + name, clickable → artist detail
-            if let authorName = playlist.authorName {
-                Group {
-                    if let authorId = playlist.authorBrowseId {
-                        NavigationLink(value: DetailRoute.artist(browseId: authorId)) {
-                            authorRow(name: authorName, avatarUrl: playlist.authorAvatarUrl)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        authorRow(name: authorName, avatarUrl: playlist.authorAvatarUrl)
-                    }
-                }
-            }
-
-            // Description (only if fetched, no fallback)
-            if let desc = playlist.descriptionText, !desc.isEmpty {
-                Text(desc)
-                    .font(.satoshi(.caption))
-                    .foregroundColor(.secondary)
-                    .lineLimit(3)
-                    .padding(.horizontal, 32)
-                    .padding(.top, 4)
-            }
-
-            // Action buttons: shuffle, play, popup more menu
-            PlaybackControlsView(
-                onPlay: { playAll(playlist) },
-                onShuffle: { shufflePlay(playlist) },
-                moreCustomView: AnyView(
-                    Menu {
-                        PlaylistMenuActionsView(
-                            playlist: playlist,
-                            onEdit: {
-                                renameText = playlist.title
-                                showRenameAlert = true
-                            },
-                            onDelete: viewModel.autoRoute == nil ? {
-                                showDeleteAlert = true
-                            } : nil
-                        )
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.satoshi(size: 17, weight: .semibold))
-                            .foregroundStyle(AudiaTheme.textSecondary)
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(AudiaTheme.surfaceVariant))
-                            .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("More options")
+        if horizontalSizeClass == .regular {
+            GeometryReader { proxy in
+                headerBanner(
+                    for: playlist,
+                    size: CGSize(width: proxy.size.width, height: Self.iPadBannerHeight)
                 )
-            )
+            }
+            .frame(height: Self.iPadBannerHeight)
+            .accessibilityElement(children: .contain)
+        } else {
+            // iPhone: full-width square banner.
+            GeometryReader { proxy in
+                headerBanner(for: playlist, size: proxy.size)
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .accessibilityElement(children: .contain)
         }
-        .padding(.vertical, 16)
-        .textPrompt(
-            "Rename Playlist",
-            isPresented: $showRenameAlert,
-            placeholder: "Playlist name",
-            text: $renameText,
-            okTitle: "Rename"
-        ) {
-            let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty, name != playlist.title else { return }
-            Task {
-                try? await SyncBridge.mutations.renamePlaylist(
-                    playlistId: playlist.playlistId,
-                    newName: name
+    }
+
+    private func headerBanner(for playlist: PlaylistDetailInfo, size: CGSize) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            AudiaTheme.background
+
+            bannerArtwork(for: playlist, size: size)
+                .frame(width: size.width, height: size.height)
+                .clipped()
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white, location: 0.0),
+                            .init(color: .white, location: 0.65),
+                            .init(color: .white.opacity(0.4), location: 0.88),
+                            .init(color: .clear, location: 1.0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
-                await viewModel.load()
+
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: .clear, location: 0.35),
+                    .init(color: AudiaTheme.background.opacity(0.35), location: 0.60),
+                    .init(color: AudiaTheme.background.opacity(0.85), location: 0.88),
+                    .init(color: AudiaTheme.background, location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(playlist.title)
+                    .font(.satoshi(size: 38, weight: .bold))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+                    .shadow(color: AudiaTheme.background.opacity(0.4), radius: 6, y: 2)
             }
+            .padding(.horizontal, horizontalSizeClass == .regular ? 32 : DesignTokens.screenHPadding)
+            .padding(.bottom, 20)
+        }
+    }
+
+    @ViewBuilder
+    private func bannerArtwork(for playlist: PlaylistDetailInfo, size: CGSize) -> some View {
+        let artworkUrl: String? = {
+            if let thumb = playlist.thumbnailUrl, !thumb.isEmpty {
+                return ArtworkURLs.sized(thumb, width: 1200, height: 1200) ?? thumb
+            }
+            if let first = playlist.songs.compactMap(\.thumbnailUrl).first(where: { !$0.isEmpty }) {
+                return ArtworkURLs.sized(first, width: 1200, height: 1200) ?? first
+            }
+            return nil
+        }()
+
+        if let artworkUrl {
+            AsyncImageView(
+                url: artworkUrl,
+                contentMode: .fill
+            )
+            .frame(width: size.width, height: size.height)
+            .clipped()
+        } else {
+            LinearGradient(
+                colors: [Color.orange.opacity(0.8), Color.purple.opacity(0.8)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .frame(width: size.width, height: size.height)
+            .overlay(
+                Image(systemName: "music.note.list")
+                    .font(.satoshi(size: 64))
+                    .foregroundStyle(.white.opacity(0.8))
+            )
         }
     }
 
@@ -633,12 +794,12 @@ struct PlaylistDetailView: View {
             } else {
                 Image(systemName: "person.circle.fill")
                     .font(.satoshi(.caption))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AudiaTheme.textSecondary)
             }
             Text(name)
                 .font(.satoshi(.subheadline))
                 .fontWeight(.medium)
-                .foregroundColor(.secondary)
+                .foregroundColor(AudiaTheme.textSecondary)
         }
     }
 

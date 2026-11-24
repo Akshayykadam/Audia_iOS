@@ -122,48 +122,11 @@ final class HomeViewModel {
             await phase2Work
             return
         }
-        await ensureQuickPicksAvailable(generation: generation)
-        guard generation == loadGeneration else {
-            await phase2Work
-            return
-        }
         await phase2Work
 
         guard generation == loadGeneration else { return }
         mergeSections()
         isLoading = false
-    }
-
-    private func ensureQuickPicksAvailable(generation: Int) async {
-        guard SettingsStore.shared.showQuickPicks else { return }
-        var attempts = 0
-        while attempts < 3,
-              generation == loadGeneration,
-              !hasQuickPicksServerSection(),
-              let continuation = homePage?.continuation {
-            attempts += 1
-            do {
-                let json = try await InnerTubeClient.audiaShared.browse(continuation: continuation)
-                guard let (newSections, next) = HomePageParser.parseContinuationSections(from: json) else {
-                    break
-                }
-                homePage?.sections.append(contentsOf: newSections)
-                homePage?.continuation = next
-                mergeSections()
-            } catch {
-                break
-            }
-        }
-    }
-
-    private func hasQuickPicksServerSection() -> Bool {
-        guard let sections = homePage?.sections else { return false }
-        let totalSongs = sections.flatMap(\.items).filter { if case .song = $0 { return true } else { return false } }.count
-        if totalSongs >= 16 { return true }
-        return sections.contains { section in
-            if case .quickPicks = mapServerSection(section, index: 0) { return true }
-            return false
-        }
     }
 
     private func fetchHomePage(generation: Int) async {
@@ -300,12 +263,6 @@ final class HomeViewModel {
 
     private func mapServerSection(_ section: HomePage.Section, index: Int) -> HomeSection {
         let title = section.title.lowercased()
-        if title == "quick picks" || title.contains("quick pick") {
-            if !SettingsStore.shared.showQuickPicks {
-                return .quickPicks(items: [])
-            }
-            return .quickPicks(items: section.items)
-        }
         if title.contains("listen again") || title.contains("keep listening") {
             return .keepListening(items: section.items)
         }
@@ -315,6 +272,10 @@ final class HomeViewModel {
     private func orderSections(_ sections: [HomeSection]) -> [HomeSection] {
         let filtered = sections.compactMap { section -> HomeSection? in
             let title = section.displayTitle.lowercased()
+            // Ignore generic unauthenticated server "Quick picks" shelves so they never overwrite or duplicate local personalization
+            if case .homePageSection = section, (title == "quick picks" || title.contains("quick pick")) {
+                return nil
+            }
             if title.contains("community playlist") || title.contains("from the community") || title.contains("trending community") {
                 return nil
             }
@@ -346,12 +307,7 @@ final class HomeViewModel {
         var byId: [String: HomeSection] = [:]
         for section in filtered {
             if let existing = byId[section.id] {
-                // If section is quickPicks and existing is local, prefer server section if it has items
-                if case .quickPicks = section, case .quickPicks = existing {
-                    if !section.items.isEmpty {
-                        byId[section.id] = section
-                    }
-                } else if section.items.count > existing.items.count {
+                if section.items.count > existing.items.count {
                     byId[section.id] = section
                 }
             } else {
@@ -383,27 +339,11 @@ final class HomeViewModel {
                 if case .song(let s) = item { seenIds.insert(s.videoId) }
             }
 
-            // 1. Collect candidate songs from homePage sections (including raw server sections)
+            // Only collect candidate songs from user-specific sections (never generic guest charts or Keep Listening)
             var candidates: [YTItem] = []
-            if let hpSections = homePage?.sections {
-                for sec in hpSections {
-                    let secTitle = sec.title.lowercased()
-                    if secTitle.contains("song mix") || secTitle.contains("song mixes") || secTitle.contains("mixed for you") || secTitle.contains("为你混配") {
-                        continue
-                    }
-                    for item in sec.items {
-                        if case .song(let s) = item, !seenIds.contains(s.videoId) {
-                            seenIds.insert(s.videoId)
-                            candidates.append(item)
-                        }
-                    }
-                }
-            }
-
-            // 2. Also collect from current ordered sections (NEVER steal from Keep Listening!)
             for sec in ordered {
                 switch sec {
-                case .keepListening:
+                case .keepListening, .homePageSection:
                     continue
                 default:
                     break

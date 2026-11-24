@@ -18,6 +18,7 @@ final class AppRouter: ObservableObject {
     @Published var explorePath: [DetailRoute] = []
     @Published var searchPath: [DetailRoute] = []
     @Published var selectedTabIndex = 0
+    @Published var settingsTargetSection: String? = nil
 
     /// Last route opened from an overlay; ContentView listens to collapse the player.
     @Published private(set) var activeRoute: DetailRoute?

@@ -80,6 +80,8 @@ final class PlayerController {
     var pendingResumeAt: TimeInterval = 0
     var nowPlayingInfo = [String: Any]()
     private var pendingSeek: (target: TimeInterval, deadline: Date)?
+    private var remoteCommandTargets: [Any] = []
+    private var isRemoteCommandsConfigured = false
 
     var currentTime: TimeInterval {
         withMpv { mpv in
@@ -255,6 +257,7 @@ extension PlayerController {
         NowPlaying.shared.isPlaying = !paused
         if !paused { assertAudioSession() }
         updateNowPlayingProgress()
+        WidgetBridge.shared.syncPlayback(from: NowPlaying.shared)
     }
 
     func togglePlayPause() {
@@ -1010,18 +1013,24 @@ extension PlayerController {
         nowPlayingInfo[MPMediaItemPropertyTitle] = np.title
         nowPlayingInfo[MPMediaItemPropertyArtist] = np.artist
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = np.albumTitle
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = np.isPlaying ? 1 : 0
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = Double(np.isPlaying ? 1.0 : 0.0)
         nowPlayingInfo[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
-        nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1
+        nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
         if duration > 0 { nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration }
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsed
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = np.queueIndex
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = np.queueSongs.count
+        if np.queueSongs.count > 1 {
+            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = np.queueIndex
+            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = np.queueSongs.count
+        } else {
+            nowPlayingInfo.removeValue(forKey: MPNowPlayingInfoPropertyPlaybackQueueIndex)
+            nowPlayingInfo.removeValue(forKey: MPNowPlayingInfoPropertyPlaybackQueueCount)
+        }
         if let image = np.thumbnailUIImage {
             nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         MPNowPlayingInfoCenter.default().playbackState = np.isPlaying ? .playing : .paused
+        WidgetBridge.shared.syncPlayback(from: np)
         Log.player.info(
             "NOW_PLAYING_PUBLISH title='\(np.title)' artist='\(np.artist)' " +
             "duration=\(duration) rate=\(nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] ?? 0) " +
@@ -1035,9 +1044,14 @@ extension PlayerController {
             nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        MPNowPlayingInfoCenter.default().playbackState = np.isPlaying ? .playing : .paused
+        WidgetBridge.shared.syncPlayback(from: np)
     }
 
     func updateNowPlayingProgress() {
+        let np = NowPlaying.shared
+        MPNowPlayingInfoCenter.default().playbackState = np.isPlaying ? .playing : .paused
+
         let props: (dur: Double, pos: Double)? = withMpv { mpv in
             var dur = Double(0)
             mpv_get_property(mpv, "duration", MPV_FORMAT_DOUBLE, &dur)
@@ -1046,7 +1060,6 @@ extension PlayerController {
             return (dur, pos)
         }
         guard var props, props.dur > 0 else { return }
-        let np = NowPlaying.shared
 
         if let seek = pendingSeek {
             if abs(props.pos - seek.target) > 1, Date() < seek.deadline {
@@ -1061,9 +1074,14 @@ extension PlayerController {
         np.duration = props.dur
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = props.pos
         np.currentTime = props.pos
-        info[MPNowPlayingInfoPropertyPlaybackRate] = np.isPlaying ? 1 : 0
-        info[MPNowPlayingInfoPropertyPlaybackQueueIndex] = np.queueIndex
-        info[MPNowPlayingInfoPropertyPlaybackQueueCount] = np.queueSongs.count
+        info[MPNowPlayingInfoPropertyPlaybackRate] = Double(np.isPlaying ? 1.0 : 0.0)
+        if np.queueSongs.count > 1 {
+            info[MPNowPlayingInfoPropertyPlaybackQueueIndex] = np.queueIndex
+            info[MPNowPlayingInfoPropertyPlaybackQueueCount] = np.queueSongs.count
+        } else {
+            info.removeValue(forKey: MPNowPlayingInfoPropertyPlaybackQueueIndex)
+            info.removeValue(forKey: MPNowPlayingInfoPropertyPlaybackQueueCount)
+        }
         nowPlayingInfo = info
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
         MPNowPlayingInfoCenter.default().playbackState = np.isPlaying ? .playing : .paused
@@ -1076,57 +1094,84 @@ extension PlayerController {
     nonisolated static func registerRemoteControlSupport() {
         MainActor.assumeIsolated {
             UIApplication.shared.beginReceivingRemoteControlEvents()
-            Log.player.info("REMOTE_COMMANDS launch-time beginReceivingRemoteControlEvents")
+            #if canImport(UIKit)
+            UIWindow.appearance().tintColor = .white
+            UIView.appearance().tintColor = .white
+            #endif
+            PlayerController.shared.assertAudioSession()
+            PlayerController.shared.setupRemoteCommands()
+            Log.player.info("REMOTE_COMMANDS registerRemoteControlSupport completed")
         }
     }
 
     fileprivate func setupRemoteCommands() {
+        guard !isRemoteCommandsConfigured else { return }
+        isRemoteCommandsConfigured = true
+
         let center = MPRemoteCommandCenter.shared()
 
-        center.playCommand.removeTarget(nil)
-        center.pauseCommand.removeTarget(nil)
-        center.togglePlayPauseCommand.removeTarget(nil)
-        center.nextTrackCommand.removeTarget(nil)
-        center.previousTrackCommand.removeTarget(nil)
-        center.changePlaybackPositionCommand.removeTarget(nil)
+        // Explicitly disable stopCommand so iOS never substitutes stop for pause
+        center.stopCommand.isEnabled = false
 
+        // Clean up previous tokens safely without blanket removeTarget(nil),
+        // which corrupts MediaPlayer internal target tracking.
+        for target in remoteCommandTargets {
+            center.playCommand.removeTarget(target)
+            center.pauseCommand.removeTarget(target)
+            center.togglePlayPauseCommand.removeTarget(target)
+            center.nextTrackCommand.removeTarget(target)
+            center.previousTrackCommand.removeTarget(target)
+            center.changePlaybackPositionCommand.removeTarget(target)
+        }
+        remoteCommandTargets.removeAll()
+
+        // Play, Pause & Toggle: all explicit commands enabled for full system compatibility
+        // (Dynamic Island unified button, Lock Screen, AirPods, and CarPlay).
         center.playCommand.isEnabled = true
-        center.playCommand.addTarget { [weak self] _ in
+        let playToken = center.playCommand.addTarget { [weak self] _ in
             Log.player.info("REMOTE_COMMAND play fired")
             Task { @MainActor [weak self] in self?.setPaused(false) }
             return .success
         }
+        remoteCommandTargets.append(playToken)
 
         center.pauseCommand.isEnabled = true
-        center.pauseCommand.addTarget { [weak self] _ in
+        let pauseToken = center.pauseCommand.addTarget { [weak self] _ in
             Log.player.info("REMOTE_COMMAND pause fired")
             Task { @MainActor [weak self] in self?.setPaused(true) }
             return .success
         }
+        remoteCommandTargets.append(pauseToken)
 
         center.togglePlayPauseCommand.isEnabled = true
-        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+        let toggleToken = center.togglePlayPauseCommand.addTarget { [weak self] _ in
             Log.player.info("REMOTE_COMMAND togglePlayPause fired")
-            Task { @MainActor [weak self] in self?.togglePlayPause() }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.togglePlayPause()
+            }
             return .success
         }
+        remoteCommandTargets.append(toggleToken)
 
         center.nextTrackCommand.isEnabled = true
-        center.nextTrackCommand.addTarget { _ in
+        let nextToken = center.nextTrackCommand.addTarget { _ in
             Log.player.info("REMOTE_COMMAND next fired")
             Task { @MainActor in NowPlaying.shared.playNext() }
             return .success
         }
+        remoteCommandTargets.append(nextToken)
 
         center.previousTrackCommand.isEnabled = true
-        center.previousTrackCommand.addTarget { _ in
+        let prevToken = center.previousTrackCommand.addTarget { _ in
             Log.player.info("REMOTE_COMMAND previous fired")
             Task { @MainActor in NowPlaying.shared.playPrevious() }
             return .success
         }
+        remoteCommandTargets.append(prevToken)
 
         center.changePlaybackPositionCommand.isEnabled = true
-        center.changePlaybackPositionCommand.addTarget { [weak self] event in
+        let seekToken = center.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             let position = event.positionTime
             Log.player.info("REMOTE_COMMAND seek fired to=\(position)")
@@ -1136,6 +1181,7 @@ extension PlayerController {
             }
             return .success
         }
+        remoteCommandTargets.append(seekToken)
 
         NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification,

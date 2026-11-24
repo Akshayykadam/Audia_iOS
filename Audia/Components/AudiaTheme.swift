@@ -133,17 +133,22 @@ public enum SatoshiFontLoader {
         DispatchQueue.main.async {
             let appearance = UINavigationBarAppearance()
             appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = .black
+            appearance.backgroundColor = UIColor { traits in
+                traits.userInterfaceStyle == .light ? .systemBackground : .black
+            }
             appearance.shadowColor = .clear
+            let titleColor = UIColor { traits in
+                traits.userInterfaceStyle == .light ? .label : .white
+            }
             if let largeFont = UIFont(name: "Satoshi-Bold", size: 32) {
-                appearance.largeTitleTextAttributes = [.font: largeFont, .foregroundColor: UIColor.white]
+                appearance.largeTitleTextAttributes = [.font: largeFont, .foregroundColor: titleColor]
             }
             if let inlineFont = UIFont(name: "Satoshi-Bold", size: 17) {
-                appearance.titleTextAttributes = [.font: inlineFont, .foregroundColor: UIColor.white]
+                appearance.titleTextAttributes = [.font: inlineFont, .foregroundColor: titleColor]
             }
             let barItemAppearance = UIBarButtonItemAppearance()
             if let buttonFont = UIFont(name: "Satoshi-Medium", size: 16) {
-                barItemAppearance.normal.titleTextAttributes = [.font: buttonFont, .foregroundColor: UIColor.white]
+                barItemAppearance.normal.titleTextAttributes = [.font: buttonFont, .foregroundColor: titleColor]
             }
             appearance.buttonAppearance = barItemAppearance
             appearance.backButtonAppearance = barItemAppearance
@@ -151,33 +156,122 @@ public enum SatoshiFontLoader {
             UINavigationBar.appearance().standardAppearance = appearance
             UINavigationBar.appearance().compactAppearance = appearance
             UINavigationBar.appearance().scrollEdgeAppearance = appearance
-            UINavigationBar.appearance().tintColor = .white
+            UINavigationBar.appearance().tintColor = titleColor
         }
         #endif
     }
 }
 
-public enum AudiaTheme {
-    // MARK: - Monochrome AMOLED Brand Colors (Pure Black & White)
-    public static let primary = Color.white // Solid Crisp White #FFFFFF
-    public static let primaryDark = Color(white: 0.82) // #D1D1D1
-    public static let primaryLight = Color.white
-    public static let onPrimary = Color.black // Pure Pitch Black #000000 for high-contrast on white pills/buttons
+#if canImport(UIKit)
+private func dynamicColor(light: UIColor, dark: UIColor) -> Color {
+    Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .light ? light : dark
+    })
+}
+#endif
 
-    // MARK: - AMOLED Backgrounds (Pure Solid Pitch Black, Zero Translucency)
+public enum AudiaTheme {
+    // MARK: - Monochrome Brand Colors (Dynamic High-Contrast)
+    #if canImport(UIKit)
+    public static let primary = dynamicColor(
+        light: UIColor.black,
+        dark: UIColor.white
+    )
+    public static let primaryDark = dynamicColor(
+        light: UIColor(white: 0.18, alpha: 1.0),
+        dark: UIColor(white: 0.82, alpha: 1.0)
+    )
+    public static let primaryLight = dynamicColor(
+        light: UIColor(white: 0.05, alpha: 1.0),
+        dark: UIColor.white
+    )
+    public static let onPrimary = dynamicColor(
+        light: UIColor.white,
+        dark: UIColor.black
+    )
+
+    // MARK: - Backgrounds
+    public static let background = dynamicColor(
+        light: UIColor.systemBackground,
+        dark: UIColor.black
+    )
+    public static let backgroundGradient = dynamicColor(
+        light: UIColor.systemBackground,
+        dark: UIColor.black
+    )
+    
+    // MARK: - Surfaces & Containers
+    public static let surface = dynamicColor(
+        light: UIColor(white: 0.95, alpha: 1.0),
+        dark: UIColor(white: 0.08, alpha: 1.0)
+    )
+    public static let surfaceVariant = dynamicColor(
+        light: UIColor(white: 0.90, alpha: 1.0),
+        dark: UIColor(white: 0.14, alpha: 1.0)
+    )
+    public static let surfaceElevated = dynamicColor(
+        light: UIColor(white: 0.98, alpha: 1.0),
+        dark: UIColor(white: 0.20, alpha: 1.0)
+    )
+    public static let surfaceBorder = dynamicColor(
+        light: UIColor(white: 0.86, alpha: 1.0),
+        dark: UIColor(white: 0.18, alpha: 1.0)
+    )
+
+    // MARK: - Sheets & Menus
+    public static let sheetBackground = dynamicColor(
+        light: UIColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1.0),
+        dark: UIColor(red: 28/255, green: 28/255, blue: 30/255, alpha: 1.0)
+    )
+    public static let sheetSurface = dynamicColor(
+        light: UIColor.white,
+        dark: UIColor(red: 44/255, green: 44/255, blue: 46/255, alpha: 1.0)
+    )
+    public static let sheetBorder = dynamicColor(
+        light: UIColor(white: 0.88, alpha: 1.0),
+        dark: UIColor(white: 0.28, alpha: 0.45)
+    )
+    public static let sheetTrack = dynamicColor(
+        light: UIColor(white: 0.85, alpha: 1.0),
+        dark: UIColor(white: 0.35, alpha: 1.0)
+    )
+    
+    // MARK: - Typography Colors
+    public static let textPrimary = dynamicColor(
+        light: UIColor.black,
+        dark: UIColor.white
+    )
+    public static let textSecondary = dynamicColor(
+        light: UIColor(white: 0.42, alpha: 1.0),
+        dark: UIColor(white: 0.65, alpha: 1.0)
+    )
+    public static let textMuted = dynamicColor(
+        light: UIColor(white: 0.60, alpha: 1.0),
+        dark: UIColor(white: 0.42, alpha: 1.0)
+    )
+    #else
+    public static let primary = Color.white
+    public static let primaryDark = Color(white: 0.82)
+    public static let primaryLight = Color.white
+    public static let onPrimary = Color.black
+
     public static let background = Color.black
     public static let backgroundGradient = Color.black
     
-    // MARK: - Surfaces & Containers (Neutral Monochrome Grayscale, 0% Green Tint)
-    public static let surface = Color(white: 0.08) // Solid dark neutral surface #141414
-    public static let surfaceVariant = Color(white: 0.14) // Solid chip/card neutral #242424
-    public static let surfaceElevated = Color(white: 0.20) // Solid elevated neutral #333333
-    public static let surfaceBorder = Color(white: 0.18) // Solid neutral border #2E2E2E
+    public static let surface = Color(white: 0.08)
+    public static let surfaceVariant = Color(white: 0.14)
+    public static let surfaceElevated = Color(white: 0.20)
+    public static let surfaceBorder = Color(white: 0.18)
+
+    public static let sheetBackground = Color(red: 28/255, green: 28/255, blue: 30/255)
+    public static let sheetSurface = Color(red: 44/255, green: 44/255, blue: 46/255)
+    public static let sheetBorder = Color(white: 0.28).opacity(0.45)
+    public static let sheetTrack = Color(white: 0.35)
     
-    // MARK: - Typography Colors (Crisp Monochrome Grayscale)
     public static let textPrimary = Color.white
-    public static let textSecondary = Color(white: 0.65) // Neutral crisp light gray #A6A6A6
-    public static let textMuted = Color(white: 0.42) // Neutral muted gray #6B6B6B
+    public static let textSecondary = Color(white: 0.65)
+    public static let textMuted = Color(white: 0.42)
+    #endif
     
     // MARK: - Corner Radii (Extra Smooth & Rounded Curves)
     public static let radiusThumb: CGFloat = 12
@@ -193,7 +287,7 @@ public struct AudiaScreenBackground: ViewModifier {
     public init() {}
     public func body(content: Content) -> some View {
         ZStack {
-            Color.black
+            AudiaTheme.background
                 .ignoresSafeArea()
             content
                 .font(.satoshi(.body))
@@ -217,10 +311,12 @@ public extension View {
     }
 }
 
-/// Solid AMOLED monochrome toggle style:
-/// OFF: Neutral dark capsule with crisp white knob on left.
-/// ON: Crisp solid white capsule with pitch black knob on right.
+/// Solid monochrome toggle style:
+/// OFF: Neutral surface capsule with knob.
+/// ON: High-contrast primary capsule with onPrimary knob.
 public struct AmoledToggleStyle: ToggleStyle {
+    @Environment(\.colorScheme) private var colorScheme
+
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         HStack {
@@ -228,7 +324,7 @@ public struct AmoledToggleStyle: ToggleStyle {
             Spacer()
             ZStack(alignment: configuration.isOn ? .trailing : .leading) {
                 Capsule()
-                    .fill(configuration.isOn ? Color.white : AudiaTheme.surfaceVariant)
+                    .fill(configuration.isOn ? AudiaTheme.primary : AudiaTheme.surfaceVariant)
                     .frame(width: 48, height: 28)
                     .overlay(
                         Capsule()
@@ -236,7 +332,7 @@ public struct AmoledToggleStyle: ToggleStyle {
                     )
 
                 Circle()
-                    .fill(configuration.isOn ? Color.black : Color.white)
+                    .fill(configuration.isOn ? AudiaTheme.onPrimary : (colorScheme == .light ? AudiaTheme.textSecondary : Color.white))
                     .frame(width: 22, height: 22)
                     .padding(.horizontal, 3)
             }

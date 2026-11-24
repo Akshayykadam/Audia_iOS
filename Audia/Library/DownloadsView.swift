@@ -28,9 +28,21 @@ struct DownloadsView: View {
                 contentView
             }
         }
-        .background(Color.black)
+        .audiaScreenBackground()
         .navigationTitle("Downloads")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showMoreSheet = true }) {
+                    Image(systemName: "ellipsis")
+                        .font(.satoshi(size: 16, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("More options")
+            }
+        }
         .refreshable { await downloadManager.reload() }
         .task {
             if !downloadManager.isLoaded {
@@ -63,6 +75,7 @@ struct DownloadsView: View {
                     songList
                 }
             }
+            .appBottomClearance()
         }
         .scrollDisabled(!downloadManager.isLoaded)
         .listStyle(.plain)
@@ -79,7 +92,7 @@ struct DownloadsView: View {
             accentColor: settings.accentColor,
             onPlay: playAll,
             onShuffle: shufflePlay,
-            onMore: { showMoreSheet = true }
+            onMore: nil
         )
         .sheet(isPresented: $showMoreSheet) {
             DownloadsMoreSheet(songs: songs)

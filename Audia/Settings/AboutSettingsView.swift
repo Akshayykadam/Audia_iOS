@@ -29,6 +29,7 @@ struct AboutSettingsView: View {
         }
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
+        .appListBottomClearance()
         .miniPlayerTracksScroll()
     }
 }

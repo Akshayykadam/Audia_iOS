@@ -31,7 +31,7 @@
           "localizedDescription": "Initial release\n\n[Discord](https://discord.gg/QrMwZAfU97)",
           "downloadURL": "https://github.com/Akshayykadam/Audia_iOS/releases/download/v0.0.1/Audia.ipa",
           "size": 35924605,
-          "minOSVersion": "26.0"
+          "minOSVersion": "16.0"
         }
       ]
     }

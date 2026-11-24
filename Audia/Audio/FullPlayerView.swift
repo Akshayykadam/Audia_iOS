@@ -8,6 +8,7 @@ import SwiftUI
 struct FullPlayerView: View {
     let onCollapse: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(SettingsStore.self) private var settings
     private let player = PlayerController.shared
     @Bindable private var np = NowPlaying.shared
@@ -56,7 +57,7 @@ struct FullPlayerView: View {
             let isCompact = geometry.size.height < 700
 
             ZStack {
-                Color.black
+                AudiaTheme.background
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -99,7 +100,7 @@ struct FullPlayerView: View {
             }
             .task { np.preloadNeighborArtwork() }
             .sheet(isPresented: $showSongMenu) {
-                if let song = np.queueSongs.indices.contains(np.queueIndex) ? np.queueSongs[np.queueIndex] : nil {
+                if let song = currentSongItem {
                     PlayerMenuSheet(song: song, onCollapseRequest: { onCollapse() })
                 }
             }
@@ -128,7 +129,7 @@ struct FullPlayerView: View {
             }) {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -136,8 +137,8 @@ struct FullPlayerView: View {
             Spacer()
 
             Text("Now Playing")
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.85))
+                .font(.satoshi(size: 17, weight: .bold))
+                .foregroundStyle(AudiaTheme.textPrimary)
 
             Spacer()
 
@@ -150,7 +151,7 @@ struct FullPlayerView: View {
                 } label: {
                     Image(systemName: "list.bullet")
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 40, height: 40)
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -161,7 +162,7 @@ struct FullPlayerView: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 40, height: 40)
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -174,7 +175,7 @@ struct FullPlayerView: View {
     private func queueContent(horizontalPadding: CGFloat) -> some View {
         VStack(spacing: 0) {
             Capsule()
-                .fill(.white.opacity(0.3))
+                .fill(AudiaTheme.textSecondary.opacity(0.3))
                 .frame(width: 36, height: 5)
                 .padding(.top, 10)
                 .padding(.bottom, 6)
@@ -208,7 +209,7 @@ struct FullPlayerView: View {
                 height: min(geometry.size.width - 56, isCompact ? 280 : 340)
             )
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .shadow(color: Color.black, radius: 18, y: 8)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.15), radius: 18, y: 8)
 
         Spacer(minLength: 16)
 
@@ -292,7 +293,7 @@ struct FullPlayerView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(np.title)
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundColor(AudiaTheme.textPrimary)
                 .lineLimit(1)
 
             Button(action: handleArtistTap) {
@@ -319,7 +320,7 @@ struct FullPlayerView: View {
                 } label: {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 44, height: 44)
                         .background(Circle().fill(AudiaTheme.surfaceVariant))
                         .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
@@ -406,10 +407,10 @@ struct FullPlayerView: View {
                 }
             } else {
                 ZStack {
-                    Color.white.opacity(0.1)
+                    AudiaTheme.surfaceVariant
                     Image(systemName: "music.note")
                         .font(.system(size: 64, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(AudiaTheme.textMuted)
                 }
             }
         }
@@ -422,7 +423,7 @@ struct FullPlayerView: View {
                     get: { isEditingSlider ? editingProgress : np.progress },
                     set: { editingProgress = $0 }
                 ),
-                accentColor: np.dominantColors.first ?? .white,
+                accentColor: np.dominantColors.first ?? AudiaTheme.primary,
                 isPlaying: np.isPlaying,
                 onEditingChanged: { editing in
                     if editing {
@@ -442,13 +443,13 @@ struct FullPlayerView: View {
                     ? TimeInterval(editingProgress) * np.duration
                     : np.currentTime))
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(AudiaTheme.textSecondary)
 
                 Spacer()
 
                 Text(DurationFormat.playbackTime(np.duration))
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(AudiaTheme.textSecondary)
             }
         }
         .padding(.horizontal, horizontalPadding)

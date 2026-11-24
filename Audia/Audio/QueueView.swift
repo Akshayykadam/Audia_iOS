@@ -92,7 +92,6 @@ struct QueueView<ProgressSlider: View>: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .environment(\.colorScheme, .dark)
                 .scrollIndicators(.hidden)
                 .layoutPriority(1)
                 .onAppear {
@@ -142,7 +141,7 @@ struct QueueView<ProgressSlider: View>: View {
             } label: {
                 Image(systemName: "chevron.down")
                     .font(.satoshi(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(AudiaTheme.surfaceVariant))
                     .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
@@ -153,7 +152,7 @@ struct QueueView<ProgressSlider: View>: View {
             VStack(spacing: 2) {
                 Text("Queue")
                     .font(.satoshi(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                 if !np.queueSongs.isEmpty {
                     Text("\(np.queueSongs.count) \(np.queueSongs.count == 1 ? "track" : "tracks")")
                         .font(.satoshi(size: 13.5, weight: .medium))
@@ -226,7 +225,7 @@ struct QueueView<ProgressSlider: View>: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(song.title)
                             .font(.satoshi(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(AudiaTheme.textPrimary)
                             .lineLimit(1)
                             .truncationMode(.tail)
 
@@ -480,6 +479,6 @@ struct QueueSongRow: View {
     }
 
     private var titleColor: Color {
-        isPlayed ? AudiaTheme.textMuted : .white
+        isPlayed ? AudiaTheme.textMuted : AudiaTheme.textPrimary
     }
 }

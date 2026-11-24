@@ -24,7 +24,7 @@ struct SongRowButtonStyle: ButtonStyle {
         configuration.label
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(configuration.isPressed ? 0.08 : 0.0))
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0.0))
             )
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }

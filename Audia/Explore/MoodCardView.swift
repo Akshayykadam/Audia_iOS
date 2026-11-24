@@ -25,7 +25,7 @@ struct MoodCardView: View {
             // Mood title (leading-aligned, bold, multi-line capable)
             Text(LocalizedStringKey(mood.title))
                 .font(.satoshi(size: 15, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(AudiaTheme.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .padding(.leading, 10)

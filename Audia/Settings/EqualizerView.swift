@@ -17,16 +17,16 @@ struct EqualizerView: View {
             Button(action: { dismiss() }) {
                 Image(systemName: "chevron.left")
                     .font(.satoshi(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.12), in: Circle())
+                    .background(AudiaTheme.surfaceVariant, in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
 
             Text("Equalizer")
                 .font(.satoshi(size: 26, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(AudiaTheme.textPrimary)
 
             Spacer()
         }
@@ -48,6 +48,7 @@ struct EqualizerView: View {
                     presetStrip(settings: settings)
                 }
                 .padding(.top, 16)
+                .appBottomClearance()
             }
         }
         .audiaScreenBackground()
@@ -113,13 +114,13 @@ struct EqualizerView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
                             .background(
-                                Capsule().fill(isSelected ? Color.white : AudiaTheme.surfaceVariant)
+                                Capsule().fill(isSelected ? AudiaTheme.primary : AudiaTheme.surfaceVariant)
                             )
                             .overlay(
                                 Capsule().strokeBorder(isSelected ? Color.clear : AudiaTheme.surfaceBorder, lineWidth: 1)
                             )
-                            .foregroundStyle(isSelected ? Color.black : AudiaTheme.textPrimary)
-                            .foregroundColor(isSelected ? Color.black : AudiaTheme.textPrimary)
+                            .foregroundStyle(isSelected ? AudiaTheme.onPrimary : AudiaTheme.textPrimary)
+                            .foregroundColor(isSelected ? AudiaTheme.onPrimary : AudiaTheme.textPrimary)
                     }
                     .buttonStyle(.plain)
                 }

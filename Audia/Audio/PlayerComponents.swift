@@ -69,7 +69,7 @@ struct PlayerPlayPauseButton: View {
                 Circle()
                     .fill(AudiaTheme.primary)
                     .frame(width: 64, height: 64)
-                    .shadow(color: Color.black.opacity(0.4), radius: 8, y: 3)
+                    .shadow(color: Color.black.opacity(0.2), radius: 8, y: 3)
 
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                     .font(.satoshi(size: 26, weight: .bold))
@@ -116,7 +116,7 @@ struct PlaybackControlsRow: View {
             }) {
                 Image(systemName: "backward.end.fill")
                     .font(.satoshi(size: 22, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.85))
@@ -134,7 +134,7 @@ struct PlaybackControlsRow: View {
             }) {
                 Image(systemName: "forward.end.fill")
                     .font(.satoshi(size: 22, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.85))
@@ -209,7 +209,7 @@ struct SecondaryActionsRow: View {
                 } label: {
                     Image(systemName: "list.bullet")
                         .font(.satoshi(.title3))
-                        .foregroundStyle(showQueue ? .white : .white.opacity(0.7))
+                        .foregroundStyle(showQueue ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
                         .padding(10)
                         .background(showQueue ? Circle().fill(AudiaTheme.surfaceVariant) : Circle().fill(.clear))
                         .overlay(showQueue ? Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1) : nil)
@@ -222,7 +222,7 @@ struct SecondaryActionsRow: View {
                     } label: {
                         Image(systemName: isRepeatOn ? "repeat.1" : "repeat")
                             .font(.satoshi(size: 15, weight: .semibold))
-                            .foregroundStyle(isRepeatOn ? .white : .white.opacity(0.7))
+                            .foregroundStyle(isRepeatOn ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
                             .padding(4)
                     }
                     .offset(x: 2, y: -2)
@@ -240,7 +240,7 @@ struct PlayerAirPlayControl: View {
         Button {} label: {
             Image(systemName: "airplayaudio")
                 .font(.satoshi(.title3))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(AudiaTheme.textSecondary)
                 .padding(10)
         }
         .overlay(AirPlayButton())

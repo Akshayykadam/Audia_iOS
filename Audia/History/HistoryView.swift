@@ -134,6 +134,7 @@ struct HistoryScreenView: View {
             }
         }
         .listStyle(.plain)
+        .appListBottomClearance()
         .miniPlayerTracksScroll()
     }
 

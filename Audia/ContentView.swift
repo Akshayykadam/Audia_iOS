@@ -10,7 +10,7 @@ struct ContentView: View {
     @Environment(SettingsStore.self) private var settings
     @ObservedObject private var router = AppRouter.shared
     @State private var nowPlaying = NowPlaying.shared
-    @State private var selectedTab = SettingsStore.shared.defaultTab
+    @State private var selectedTab = 0
     @State private var isExpanded = false
     @State private var scrollState = MiniPlayerScrollState()
 
@@ -72,7 +72,6 @@ struct ContentView: View {
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: router.isAtRootTab)
         .toggleStyle(.amoled)
-        .preferredColorScheme(.dark)
         .overlay {
             if isExpanded {
                 FullPlayerView(onCollapse: {
@@ -87,6 +86,11 @@ struct ContentView: View {
         .onAppear { AppRouter.shared.selectedTabIndex = selectedTab }
         .onChange(of: selectedTab) { _, newValue in
             AppRouter.shared.selectedTabIndex = newValue
+        }
+        .onReceive(AppRouter.shared.$selectedTabIndex) { index in
+            if selectedTab != index {
+                selectedTab = index
+            }
         }
         .onReceive(AppRouter.shared.$activeRoute) { route in
             if route != nil {
@@ -132,9 +136,10 @@ struct ContentView: View {
     }
 }
 
-/// Solid AMOLED Tab Bar - completely opaque, zero liquid glass, minimal icon-only design
+/// Solid Monochrome Tab Bar - completely opaque, minimal icon-only design
 struct AudiaSolidTabBar: View {
     @Binding var selectedTab: Int
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 8) {
@@ -153,7 +158,7 @@ struct AudiaSolidTabBar: View {
             Capsule()
                 .stroke(AudiaTheme.surfaceBorder, lineWidth: 1.2)
         )
-        .shadow(color: Color.black, radius: 16, y: 6)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.08), radius: 16, y: 6)
     }
 
     private func tabButton(icon: String, selectedIcon: String, index: Int) -> some View {
@@ -175,7 +180,7 @@ struct AudiaSolidTabBar: View {
 
                 Image(systemName: isSelected ? selectedIcon : icon)
                     .font(.system(size: 23, weight: isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? Color.white : AudiaTheme.textSecondary)
+                    .foregroundStyle(isSelected ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
             }
             .frame(width: 56, height: 46)
         }

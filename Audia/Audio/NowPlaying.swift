@@ -5,6 +5,7 @@
 
 import AVFoundation
 import Foundation
+import MediaPlayer
 import Observation
 import Nuke
 import SwiftUI
@@ -19,7 +20,14 @@ final class NowPlaying {
     var albumTitle = ""
     var videoId: String?
     var artists: [YTArtist] = []
-    var isPlaying = false
+    var isPlaying = false {
+        didSet {
+            if isPlaying != oldValue {
+                MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused
+                WidgetBridge.shared.syncPlayback(from: self)
+            }
+        }
+    }
     var currentTime: TimeInterval = 0
     var duration: TimeInterval = 0
     var progress: Float {
@@ -104,6 +112,9 @@ final class NowPlaying {
     }
 
     func persistQueueState() {
+        if !queueSongs.isEmpty {
+            WidgetBridge.shared.syncRecentSongs(queueSongs)
+        }
         guard SettingsStore.shared.persistQueue else { return }
         if queueSongs.isEmpty {
             UserDefaults.standard.removeObject(forKey: Self.queueKey)
@@ -207,7 +218,14 @@ final class NowPlaying {
     }
 
     func playPrevious() {
-        guard hasPrevious else { return }
+        if currentTime > 3.0 {
+            PlayerController.shared.seek(to: 0)
+            return
+        }
+        guard hasPrevious else {
+            PlayerController.shared.seek(to: 0)
+            return
+        }
         guard !isResolvingNext else { return }
         lastManualSkipTime = Date()
         queueIndex -= 1
@@ -245,14 +263,23 @@ final class NowPlaying {
         }
     }
 
-    func update(title: String, artist: String?, videoId: String, album: String? = nil, artists: [YTArtist] = [], thumbnailUrl: String? = nil) {
+    func update(title: String, artist: String?, videoId: String, album: String? = nil, artists: [YTArtist] = [], thumbnailUrl: String? = nil, duration: TimeInterval? = nil) {
+        var cleanedArtist = cleanArtistDisplay(artist ?? "")
+        let (cleanedTitle, extractedArtist) = cleanTitleAndExtractArtist(title, fallbackArtist: cleanedArtist)
+        if cleanedArtist.isEmpty, let extractedArtist, !extractedArtist.isEmpty {
+            cleanedArtist = cleanArtistDisplay(extractedArtist)
+        }
         self.isPlaying = true
-        self.title = title
+        self.title = cleanedTitle
         self.artists = artists
-        self.artist = cleanArtistDisplay(artist ?? "")
+        self.artist = cleanedArtist
         self.albumTitle = album ?? ""
         self.currentTime = 0
-        self.duration = 0
+        self.duration = duration ?? 0
+        if self.videoId != videoId {
+            self.thumbnailUIImage = nil
+            self.thumbnailImage = nil
+        }
         self.videoId = videoId
         self.hasVideo = false
         self.isVideoMode = false
@@ -260,6 +287,8 @@ final class NowPlaying {
         startTimer()
         loadThumbnail(videoId: videoId, thumbnailUrl: thumbnailUrl)
         preloadNextTrack()
+        WidgetBridge.shared.syncPlayback(from: self)
+        PlayerController.shared.setNowPlayingMetadata()
     }
 
     /// Convenience pushing a `SongItem`'s metadata into the player state.
@@ -270,7 +299,8 @@ final class NowPlaying {
             videoId: song.videoId,
             album: song.album,
             artists: song.artists,
-            thumbnailUrl: song.thumbnailUrl
+            thumbnailUrl: song.thumbnailUrl,
+            duration: Double(song.duration)
         )
     }
 
@@ -459,6 +489,9 @@ final class NowPlaying {
         thumbnailVersion &+= 1
         updateDominantColors(from: cropped)
         PlayerController.shared.updateNowPlayingArtwork()
+        if let videoId {
+            WidgetBridge.shared.syncArtwork(cropped, for: videoId)
+        }
     }
 
     private func loadThumbnailFromCDN(videoId: String, thumbnailUrl: String? = nil) {
@@ -558,7 +591,6 @@ final class NowPlaying {
     private func timerTick() {
         currentTime = PlayerController.shared.currentTime
         duration = PlayerController.shared.duration
-        PlayerController.shared.updateNowPlayingProgress()
         if let videoId, duration >= 600 || musicVideoType == "MUSIC_VIDEO_TYPE_PODCAST_EPISODE" {
             let vid = videoId
             let pos = currentTime
@@ -648,4 +680,67 @@ private func _isJunkArtistSegment(_ segment: String) -> Bool {
         return true
     }
     return false
+}
+
+func cleanTitleDisplay(_ title: String, artist: String? = nil) -> String {
+    cleanTitleAndExtractArtist(title, fallbackArtist: artist).title
+}
+
+func cleanTitleAndExtractArtist(_ title: String, fallbackArtist: String? = nil) -> (title: String, artist: String?) {
+    var clean = title
+
+    // Strip video / audio / lyric tags in brackets or parentheses
+    let junkPatterns = [
+        #"[\(\[]\s*(?:official\s*(?:music\s*)?video|official\s*audio|lyric\s*video|lyrics?|visualizer|official|audio|video|hd|4k)\s*[\)\]]"#,
+        #"\|\s*(?:official\s*(?:music\s*)?video|official\s*audio|lyrics?|visualizer).*$"#,
+        #"-\s*(?:official\s*(?:music\s*)?video|official\s*audio|lyric\s*video).*$"#
+    ]
+    for pattern in junkPatterns {
+        if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
+            let range = NSRange(clean.startIndex..<clean.endIndex, in: clean)
+            clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "")
+        }
+    }
+
+    var extractedArtist: String?
+    let dashSeparators = [" - ", " – ", " — "]
+    for sep in dashSeparators {
+        let parts = clean.components(separatedBy: sep)
+        if parts.count == 2 {
+            let left = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            let right = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            if let fallback = fallbackArtist?.trimmingCharacters(in: .whitespacesAndNewlines), !fallback.isEmpty {
+                let lowerFallback = fallback.lowercased()
+                if right.lowercased() == lowerFallback || right.lowercased().contains(lowerFallback) {
+                    clean = left
+                    extractedArtist = right
+                    break
+                }
+                if left.lowercased() == lowerFallback || left.lowercased().contains(lowerFallback) {
+                    clean = right
+                    extractedArtist = left
+                    break
+                }
+            } else {
+                clean = left
+                extractedArtist = right
+                break
+            }
+        }
+    }
+
+    if let fallback = fallbackArtist?.trimmingCharacters(in: .whitespacesAndNewlines), !fallback.isEmpty {
+        let escaped = NSRegularExpression.escapedPattern(for: fallback)
+        if let regex = try? NSRegularExpression(pattern: #"\s*[-–—|]\s*"# + escaped + #"\s*$"#, options: [.caseInsensitive]) {
+            let range = NSRange(clean.startIndex..<clean.endIndex, in: clean)
+            clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "")
+        }
+        if let regex = try? NSRegularExpression(pattern: #"^"# + escaped + #"\s*[-–—|]\s*"#, options: [.caseInsensitive]) {
+            let range = NSRange(clean.startIndex..<clean.endIndex, in: clean)
+            clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "")
+        }
+    }
+
+    let trimmed = clean.trimmingCharacters(in: .whitespacesAndNewlines)
+    return (trimmed.isEmpty ? title : trimmed, extractedArtist)
 }

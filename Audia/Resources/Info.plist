@@ -28,6 +28,7 @@
 			<array>
 				<string>audiadiscord</string>
 				<string>audia</string>
+				<string>youtubemusic</string>
 			</array>
 		</dict>
 	</array>
@@ -48,6 +49,10 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchScreen</key>

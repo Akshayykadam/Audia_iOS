@@ -144,7 +144,7 @@ struct LibraryView: View {
                 autoPlaylistsList
                 playlistsAndAlbumsSection
             }
-            .padding(.bottom, 96)
+            .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .miniPlayerTracksScroll()
@@ -188,7 +188,7 @@ struct LibraryView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(LocalizedStringKey(info.title))
                     .font(.satoshi(size: 16.5, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                 if let subtitle = info.subtitle {
                     Text(LocalizedStringKey(subtitle))
                         .font(.satoshi(size: 14))
@@ -210,7 +210,7 @@ struct LibraryView: View {
             HStack {
                 Text("Playlists & Albums")
                     .font(.satoshi(size: 26, weight: .bold))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(AudiaTheme.textPrimary)
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -238,7 +238,7 @@ struct LibraryView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(playlist.name)
                             .font(.satoshi(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(AudiaTheme.textPrimary)
                             .lineLimit(1)
                         Text(playlistSongCounts[playlist.id].map { "\($0) songs" } ?? "Playlist")
                             .font(.satoshi(size: 14))
@@ -269,7 +269,7 @@ struct LibraryView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(album.title)
                             .font(.satoshi(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(AudiaTheme.textPrimary)
                             .lineLimit(1)
                         Text(album.songCount > 0 ? "\(album.songCount) songs" : "Album")
                             .font(.satoshi(size: 14))
@@ -781,7 +781,10 @@ struct CreatePlaylistDialog: View {
     // MARK: - Tab Picker
 
     private var accentTextColor: Color {
-        (settings.accentName == "White" || settings.accentColor == .white) ? .black : .white
+        if settings.accentName == "White" {
+            return AudiaTheme.onPrimary
+        }
+        return .white
     }
 
     private var tabPicker: some View {
@@ -995,7 +998,7 @@ struct CreatePlaylistDialog: View {
             Button(action: { isPresented = false }, label: {
                 Text("Cancel")
                     .font(.satoshi(.body, weight: .medium))
-                    .foregroundColor(.primary)
+                    .foregroundColor(AudiaTheme.textPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(

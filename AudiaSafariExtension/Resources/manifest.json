@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Open in Audia",
+  "description": "Seamlessly open YouTube Music tracks, albums, and playlists in Audia.",
+  "version": "1.0",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "32": "images/icon-32.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://music.youtube.com/*",
+        "*://www.youtube.com/watch*",
+        "*://m.youtube.com/watch*",
+        "*://youtu.be/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "host_permissions": [
+    "*://music.youtube.com/*",
+    "*://www.youtube.com/*",
+    "*://m.youtube.com/*",
+    "*://youtu.be/*"
+  ]
+}

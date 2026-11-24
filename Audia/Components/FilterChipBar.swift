@@ -41,11 +41,11 @@ struct FilterChipBar<Item, ID: Hashable>: View {
                                     .strokeBorder(selected ? Color.clear : AudiaTheme.surfaceBorder, lineWidth: 1)
                             )
                             .foregroundStyle(selected
-                                ? Color.black
-                                : Color.white)
+                                ? AudiaTheme.onPrimary
+                                : AudiaTheme.textPrimary)
                             .foregroundColor(selected
-                                ? Color.black
-                                : Color.white)
+                                ? AudiaTheme.onPrimary
+                                : AudiaTheme.textPrimary)
                     }
                     .buttonStyle(BouncyScaleButtonStyle(scale: 0.92))
                 }
