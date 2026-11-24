@@ -383,18 +383,16 @@ struct AlbumDetailView: View {
 
     @ViewBuilder
     private func songList(for album: AlbumDetailInfo) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(album.songs.enumerated()), id: \.offset) { index, song in
-                SongRowView(
-                    song: song,
-                    onTap: { playSong(song, in: album) },
-                    onNavigate: { pendingRoute = $0 }
-                )
+        ForEach(Array(album.songs.enumerated()), id: \.element.id) { index, song in
+            SongRowView(
+                song: song,
+                onTap: { playSong(song, in: album) },
+                onNavigate: { pendingRoute = $0 }
+            )
 
-                if index < album.songs.count - 1 {
-                    Divider()
-                        .padding(.leading, 84)
-                }
+            if index < album.songs.count - 1 {
+                Divider()
+                    .padding(.leading, 84)
             }
         }
     }

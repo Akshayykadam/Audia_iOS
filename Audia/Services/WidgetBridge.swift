@@ -27,17 +27,32 @@ final class WidgetBridge {
 
     private func createThumbnailData(from image: UIImage?) -> Data? {
         guard let image else { return nil }
-        let targetSize = CGSize(width: 48, height: 48)
+        let targetSize = CGSize(width: 44, height: 44)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0
         let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
         let resized = renderer.image { _ in
+            UIColor.black.setFill()
+            UIRectFill(CGRect(origin: .zero, size: targetSize))
             image.draw(in: CGRect(origin: .zero, size: targetSize))
         }
-        guard let data = resized.jpegData(compressionQuality: 0.55), data.count < 2000 else {
-            return nil
+        if let data = resized.jpegData(compressionQuality: 0.50), data.count < 1800 {
+            return data
         }
-        return data
+        if let data = resized.jpegData(compressionQuality: 0.30), data.count < 2200 {
+            return data
+        }
+        let smallSize = CGSize(width: 32, height: 32)
+        let smallRenderer = UIGraphicsImageRenderer(size: smallSize, format: format)
+        let smallResized = smallRenderer.image { _ in
+            UIColor.black.setFill()
+            UIRectFill(CGRect(origin: .zero, size: smallSize))
+            image.draw(in: CGRect(origin: .zero, size: smallSize))
+        }
+        if let data = smallResized.jpegData(compressionQuality: 0.35), data.count < 2200 {
+            return data
+        }
+        return nil
     }
 
     // MARK: - Playback Sync
@@ -63,9 +78,9 @@ final class WidgetBridge {
                 lastArtworkData = artworkData
                 lastArtworkDataVideoId = videoId
             }
-        } else if lastSavedArtworkId == videoId {
+        } else if lastSavedArtworkId == videoId, let cached = lastArtworkData {
             artworkFileName = "\(videoId).jpg"
-            artworkData = lastArtworkData
+            artworkData = cached
         } else {
             let fileURL = store.artworkDirectory.appendingPathComponent("\(videoId).jpg")
             if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -82,6 +97,21 @@ final class WidgetBridge {
         let currentThumbUrl = nowPlaying.queueSongs.indices.contains(nowPlaying.queueIndex)
             ? nowPlaying.queueSongs[nowPlaying.queueIndex].thumbnailUrl
             : nowPlaying.queueSongs.first(where: { $0.videoId == videoId })?.thumbnailUrl
+
+        if artworkData == nil {
+            let thumbUrl = currentThumbUrl ?? "https://i.ytimg.com/vi/\(videoId)/hqdefault.jpg"
+            if let url = URL(string: thumbUrl) {
+                Task { [weak self] in
+                    guard let self else { return }
+                    if let (data, _) = try? await URLSession.shared.data(from: url),
+                       let img = UIImage(data: data) {
+                        await MainActor.run {
+                            self.syncArtwork(img, for: videoId)
+                        }
+                    }
+                }
+            }
+        }
 
         let state = WidgetPlaybackState(
             videoId: videoId,
@@ -112,12 +142,11 @@ final class WidgetBridge {
         lastArtworkDataVideoId = videoId
 
         var state = store.readPlaybackState()
-        if state.videoId == videoId {
-            state.artworkFileName = fileName
-            store.writePlaybackState(state)
-            reloadNowPlayingWidgets()
-            syncLiveActivity(from: state, artworkData: artworkData)
-        }
+        state.videoId = videoId
+        state.artworkFileName = fileName
+        store.writePlaybackState(state)
+        reloadNowPlayingWidgets()
+        syncLiveActivity(from: state, artworkData: artworkData)
     }
 
     // MARK: - Live Activity Management
@@ -126,7 +155,8 @@ final class WidgetBridge {
         guard #available(iOS 16.2, *) else { return }
         #if canImport(ActivityKit)
         let areEnabled = ActivityAuthorizationInfo().areActivitiesEnabled
-        Log.player.info("SYNC_LIVE_ACTIVITY: areEnabled=\(areEnabled) isPlaying=\(state.isPlaying) videoId=\(state.videoId) count=\(Activity<AudiaNowPlayingAttributes>.activities.count)")
+        let activeActivities = Activity<AudiaNowPlayingAttributes>.activities.filter { $0.activityState == .active }
+        Log.player.info("SYNC_LIVE_ACTIVITY: areEnabled=\(areEnabled) isPlaying=\(state.isPlaying) videoId=\(state.videoId) activeCount=\(activeActivities.count)")
         guard areEnabled else { return }
 
         let resolvedData = artworkData ?? (lastArtworkDataVideoId == state.videoId ? lastArtworkData : nil)
@@ -143,7 +173,7 @@ final class WidgetBridge {
             updatedAt: Date()
         )
 
-        if let existing = Activity<AudiaNowPlayingAttributes>.activities.first {
+        if let existing = activeActivities.first {
             Task {
                 await existing.update(.init(state: contentState, staleDate: nil))
             }

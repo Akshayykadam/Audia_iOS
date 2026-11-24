@@ -192,7 +192,7 @@ struct FullPlayerView: View {
                 editingProgress: $editingProgress,
                 isEditingSlider: $isEditingSlider,
                 pendingRoute: $pendingRoute,
-                progressSlider: { progressSlider(horizontalPadding: horizontalPadding) }
+                progressSlider: { FullPlayerProgressSlider(horizontalPadding: horizontalPadding) }
             )
         }
     }
@@ -217,7 +217,7 @@ struct FullPlayerView: View {
             .padding(.horizontal, horizontalPadding)
             .padding(.bottom, isCompact ? 8 : 12)
 
-        progressSlider(horizontalPadding: horizontalPadding)
+        FullPlayerProgressSlider(horizontalPadding: horizontalPadding)
             .padding(.bottom, isCompact ? 8 : 16)
 
         playbackControls(isCompact: isCompact)
@@ -341,7 +341,7 @@ struct FullPlayerView: View {
                 editingProgress: $editingProgress,
                 isEditingSlider: $isEditingSlider,
                 pendingRoute: $pendingRoute,
-                progressSlider: { progressSlider(horizontalPadding: 32) },
+                progressSlider: { FullPlayerProgressSlider(horizontalPadding: 32) },
                 isVideoMode: true
             )
             .frame(maxHeight: .infinity)
@@ -416,7 +416,18 @@ struct FullPlayerView: View {
         }
     }
 
-    private func progressSlider(horizontalPadding: CGFloat) -> some View {
+}
+
+// MARK: - Progress Slider (Isolated from parent view re-evaluations)
+
+private struct FullPlayerProgressSlider: View {
+    let horizontalPadding: CGFloat
+    @Bindable private var np = NowPlaying.shared
+    private let player = PlayerController.shared
+    @State private var editingProgress: Float = 0
+    @State private var isEditingSlider = false
+
+    var body: some View {
         VStack(spacing: 6) {
             ProgressBar(
                 progress: Binding(
@@ -454,6 +465,9 @@ struct FullPlayerView: View {
         }
         .padding(.horizontal, horizontalPadding)
     }
+}
+
+extension FullPlayerView {
 
     // MARK: - Artist Navigation
 

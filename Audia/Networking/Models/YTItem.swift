@@ -265,7 +265,8 @@ enum YTItem {
     }
 }
 
-struct SongItem: Codable, Hashable {
+struct SongItem: Codable, Hashable, Identifiable {
+    var id: String { videoId }
     var videoId: String
     var title: String
     var artists: [YTArtist]
@@ -484,7 +485,8 @@ struct PodcastItem {
     }
 }
 
-struct EpisodeItem {
+struct EpisodeItem: Identifiable {
+    var id: String { videoId }
     var videoId: String
     var title: String
     var artists: [YTArtist]

@@ -374,6 +374,19 @@ public final class WidgetDataStore {
     }
 }
 
+// MARK: - Accented Full Color Image Extension
+
+public extension Image {
+    @ViewBuilder
+    func preserveAccentedFullColor() -> some View {
+        if #available(iOS 18.0, *) {
+            self.widgetAccentedRenderingMode(.fullColor)
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - ActivityKit Live Activity Attributes
 
 #if canImport(ActivityKit)

@@ -382,8 +382,9 @@ extension PlayerController {
 
         mpv_set_option_string(mpv, "keep-open", "no")
         mpv_set_option_string(mpv, "cache", "yes")
-        mpv_set_option_string(mpv, "cache-secs", "120")
-        mpv_set_option_string(mpv, "demuxer-max-bytes", "200M")
+        mpv_set_option_string(mpv, "cache-secs", "60")
+        mpv_set_option_string(mpv, "demuxer-max-bytes", "32M")
+        mpv_set_option_string(mpv, "demuxer-max-back-bytes", "16M")
         mpv_set_option_string(mpv, "gapless-audio", "yes")
     }
 

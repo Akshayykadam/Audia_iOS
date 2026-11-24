@@ -65,7 +65,7 @@ struct MiniPlayerBarView: View {
             Capsule()
                 .fill(AudiaTheme.surface)
         )
-        .overlay(alignment: .bottom) { progressLine }
+        .overlay(alignment: .bottom) { MiniPlayerProgressBar() }
         .clipShape(Capsule())
         .overlay(Capsule().stroke(AudiaTheme.surfaceBorder, lineWidth: 1.5))
         .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.08), radius: 14, y: 5)
@@ -196,18 +196,6 @@ struct MiniPlayerBarView: View {
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.86))
         .accessibilityLabel("Next song")
-    }
-
-    private var progressLine: some View {
-        GeometryReader { geo in
-            let progressWidth = max(0, min(geo.size.width, geo.size.width * CGFloat(np.progress)))
-            Capsule()
-                .fill(AudiaTheme.primary)
-                .frame(width: progressWidth, height: 3)
-        }
-        .frame(height: 3)
-        .allowsHitTesting(false)
-        .clipShape(Capsule())
     }
 
     // MARK: - Data
@@ -363,4 +351,22 @@ private struct MiniArtworkView: View {
 private func cachedArtwork(for videoId: String) -> UIImage? {
     guard let url = URL(string: NowPlaying.artworkURL(for: videoId)) else { return nil }
     return ArtworkLoader.cachedImage(for: url)?.centerCroppedSquare()
+}
+
+// MARK: - Isolated Progress Bar
+
+private struct MiniPlayerProgressBar: View {
+    @Bindable private var np = NowPlaying.shared
+
+    var body: some View {
+        GeometryReader { geo in
+            let progressWidth = max(0, min(geo.size.width, geo.size.width * CGFloat(np.progress)))
+            Capsule()
+                .fill(AudiaTheme.primary)
+                .frame(width: progressWidth, height: 3)
+        }
+        .frame(height: 3)
+        .allowsHitTesting(false)
+        .clipShape(Capsule())
+    }
 }

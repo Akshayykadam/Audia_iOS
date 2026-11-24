@@ -844,23 +844,21 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private func songList(for playlist: PlaylistDetailInfo) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(playlist.songs.enumerated()), id: \.offset) { index, song in
-                SongRowView(song: song, onTap: { playSong(song, in: playlist) }, onNavigate: { pendingRoute = $0 })
-                .contextMenu {
-                    if isEditable {
-                        Button(role: .destructive) {
-                            Task { await removeSong(song) }
-                        } label: {
-                            Label("Remove from Playlist", systemImage: "minus.circle")
-                        }
+        ForEach(Array(playlist.songs.enumerated()), id: \.element.id) { index, song in
+            SongRowView(song: song, onTap: { playSong(song, in: playlist) }, onNavigate: { pendingRoute = $0 })
+            .contextMenu {
+                if isEditable {
+                    Button(role: .destructive) {
+                        Task { await removeSong(song) }
+                    } label: {
+                        Label("Remove from Playlist", systemImage: "minus.circle")
                     }
                 }
+            }
 
-                if index < playlist.songs.count - 1 {
-                    Divider()
-                        .padding(.leading, 84)
-                }
+            if index < playlist.songs.count - 1 {
+                Divider()
+                    .padding(.leading, 84)
             }
         }
     }

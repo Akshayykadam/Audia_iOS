@@ -552,7 +552,7 @@ struct ArtistDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
 
-            ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
+            ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
                                 Button(action: { playSong(song) }, label: {
                     HStack(spacing: 12) {
                         AsyncImageView(url: song.thumbnailUrl)

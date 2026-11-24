@@ -402,14 +402,11 @@ public struct AudiaNowPlayingLiveActivity: Widget {
 
                 // Expanded Trailing: Waveform / Visualizer
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack {
-                        Spacer()
-                        Image(systemName: context.state.isPlaying ? "waveform" : "pause.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.trailing, 6)
-                        Spacer()
-                    }
+                    Image(systemName: context.state.isPlaying ? "waveform" : "pause.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.trailing, 4)
+                        .frame(maxHeight: 52, alignment: .center)
                 }
 
                 // Expanded Center: Title & Artist
@@ -427,6 +424,7 @@ public struct AudiaNowPlayingLiveActivity: Widget {
                             .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxHeight: 52, alignment: .center)
                     .padding(.leading, 6)
                     .padding(.trailing, 4)
                 }
@@ -568,12 +566,12 @@ struct NowPlayingLiveActivityArtworkView: View {
             if let data, let img = UIImage(data: data) {
                 Image(uiImage: img)
                     .resizable()
-                    .widgetAccentedRenderingMode(.fullColor)
+                    .preserveAccentedFullColor()
                     .aspectRatio(contentMode: .fill)
             } else if let fileName, let img = WidgetDataStore.shared.loadArtwork(fileName: fileName) {
                 Image(uiImage: img)
                     .resizable()
-                    .widgetAccentedRenderingMode(.fullColor)
+                    .preserveAccentedFullColor()
                     .aspectRatio(contentMode: .fill)
             } else {
                 ZStack {

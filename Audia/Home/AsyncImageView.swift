@@ -9,25 +9,46 @@ import SwiftUI
 struct AsyncImageView: View {
     let url: String?
     var contentMode: ContentMode = .fill
+    var targetSize: CGSize? = nil
     @Environment(\.displayScale) private var displayScale
     @State private var loadedImage: UIImage?
 
+    init(url: String?, contentMode: ContentMode = .fill, targetSize: CGSize? = nil) {
+        self.url = url
+        self.contentMode = contentMode
+        self.targetSize = targetSize
+        if let urlString = url, let u = URL(string: urlString), let cached = ArtworkLoader.cachedImage(for: u) {
+            _loadedImage = State(initialValue: cached)
+        }
+    }
+
     var body: some View {
-        GeometryReader { geometry in
-            Group {
-                if let image = loadedImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: contentMode)
-                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
-                        .clipped()
-                } else {
-                    placeholderView
+        if let target = targetSize {
+            content(size: target)
+                .frame(width: target.width, height: target.height)
+                .task(id: url) {
+                    await loadImage(targetSize: target)
                 }
+        } else {
+            GeometryReader { geometry in
+                content(size: geometry.size)
+                    .task(id: url) {
+                        await loadImage(targetSize: geometry.size)
+                    }
             }
-            .task(id: url) {
-                await loadImage(targetSize: geometry.size)
-            }
+        }
+    }
+
+    @ViewBuilder
+    private func content(size: CGSize) -> some View {
+        if let image = loadedImage {
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: contentMode)
+                .frame(width: size.width, height: size.height, alignment: .center)
+                .clipped()
+        } else {
+            placeholderView
         }
     }
 

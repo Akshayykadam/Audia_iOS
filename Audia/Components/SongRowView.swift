@@ -192,7 +192,7 @@ struct SongRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            AsyncImageView(url: song.thumbnailUrl)
+            AsyncImageView(url: song.thumbnailUrl, targetSize: CGSize(width: artSize, height: artSize))
                 .frame(width: artSize, height: artSize)
                 .clipShape(RoundedRectangle(cornerRadius: artRadius, style: .continuous))
 

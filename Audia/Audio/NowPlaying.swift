@@ -612,7 +612,12 @@ final class NowPlaying {
             self.dominantColors = [Color.black, Color.black]
             return
         }
-        self.dominantColors = uiImage.extractDominantColors()
+        Task.detached(priority: .userInitiated) {
+            let colors = uiImage.extractDominantColors()
+            await MainActor.run { [weak self] in
+                self?.dominantColors = colors
+            }
+        }
     }
 }
 
