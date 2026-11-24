@@ -1,146 +1,263 @@
 # Audia
 
-A high-performance, optimized YouTube Music client for iOS built with SwiftUI.
+### Your music. Your way. No interruptions.
 
-Audia is designed for smooth, battery-efficient, and ad-free music and video streaming. It offers deep YouTube Music account synchronization, hardware-accelerated video playback, a built-in 10-band equalizer, offline downloads, and seamless Spotify & Youtube Music playlist importing.
+**Audia** is a high-performance, open-source Music client for iOS, built with SwiftUI and powered by MPVKit.
+
+Designed for people who love music and care about the listening experience. Audia brings together a beautiful interface, powerful playback controls, seamless library synchronization, and a feature-packed audio engine — all in one place.
+
+No unnecessary clutter. No annoying ads. Just you and your music.
+
+<p align="center">
+  <strong>🎵 Ad-Free · ⚡ High Performance · 🎨 Beautifully Designed · 🔒 Privacy First</strong>
+</p>
 
 ---
 
-# Features
+## Take a Look Around
 
-### Playback & Audio
+A little preview of what your music experience looks like.
 
-- **Ad-Free Streaming** — Enjoy music and videos without interruptions.
-- **Powered by MPVKit** — Reliable, low-latency playback with the libmpv engine.
-- **Background Playback** — Full Lock Screen and Control Center controls with album artwork and playback progress.
-- **10-Band Equalizer** — Fine-tune your sound with ±12 dB controls and 15 built-in presets.
-- **Audio Normalization** — Consistent volume levels with EBU R128 loudness normalization.
-- **Gapless Playback** — Seamless transitions between tracks.
-- **In-App Volume Control** — Adjust playback volume directly from the player.
+<p align="center">
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.39.30%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.39.51%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.39.58%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.04%E2%80%AFPM.png" width="24%" />
+</p>
+<p align="center">
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.21%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.31%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.40%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.41.06%E2%80%AFPM.png" width="24%" />
+</p>
+
+---
+
+## ✨ What Makes Audia Different?
+
+Not just another music player. Audia packs a lot under the hood.
+
+### Playback That Just Feels Right
+
+Your music deserves more than basic playback controls.
+
+- **Ad-Free Streaming** — Enjoy music and videos without commercial interruptions.
+- **MPVKit Audio Engine** — Powered by libmpv for reliable, low-latency playback.
+- **Background Playback** — Keep the music going with full Lock Screen and Control Center integration.
+- **10-Band Equalizer** — Shape your sound with ±12 dB controls and 15 built-in presets.
+- **Audio Normalization** — Consistent volume using EBU R128 loudness normalization.
+- **Gapless Playback** — Move between tracks without missing a beat.
+- **In-App Volume Control** — Adjust volume right from the player.
 - **Artwork Gestures** — Swipe album artwork to skip tracks.
 
-### Video Playback
+### Music Is Better When You Can See It
 
-- **Music Videos** — Switch between audio and high-quality video anytime.
-- **Metal Rendering** — Hardware-accelerated video with automatic aspect ratio handling.
-- **Audio-Only Mode** — Save battery and data by disabling video playback.
+Sometimes you want to listen. Sometimes you want to watch.
 
-### Playlist Import
+- **Music Videos** — Switch between audio and high-quality video whenever you like.
+- **Metal Rendering** — Hardware-accelerated video rendering with automatic aspect ratio handling.
+- **Audio-Only Mode** — Skip video playback to save battery and mobile data.
 
-- **Spotify & YouTube Music Import** — Import public playlists by simply pasting a link.
-- **No Setup Required** — Import Spotify playlists of up to 100 tracks without API keys.
-- **Spotify API Support** — Optional API credentials for larger playlists.
-- **Smart Track Matching** — Accurate matching using ISRC, title, artist, and local caching.
+### Bring Your Playlists Along
 
-### Queue & Playback Management
+Switching music platforms shouldn't mean starting your library from scratch.
 
-- **Persistent Queue** — Your queue, shuffle, and repeat settings are saved automatically.
-- **Autoplay** — Discover similar tracks when your queue ends.
-- **Queue Management** — Easily reorder, add, and remove upcoming tracks.
+- **Spotify Import** — Bring your public Spotify playlists into Audia.
+- **YouTube Music Import** — Import playlists directly using their links.
+- **No API Keys Needed** — Import Spotify playlists containing up to 100 tracks without additional setup.
+- **Optional Spotify API** — Configure your own API credentials for larger playlists.
+- **Smart Track Matching** — Match songs using ISRC, title, and artist information, backed by local caching.
 
-### Offline Downloads
+Just paste a playlist link. Let Audia do the matching.
 
-- **Offline Playback** — Download music and podcasts for offline listening.
-- **Auto Downloads** — Automatically download liked songs and new podcast episodes.
-- **Wi-Fi Only Downloads** — Keep mobile data usage under control.
-- **Storage Management** — Monitor downloads and manage storage from Settings.
+### Your Queue, Your Rules
 
-### Library & Sync
+Keep your listening experience exactly how you like it.
+
+- **Persistent Queue** — Your queue, shuffle, and repeat preferences are saved automatically.
+- **Autoplay** — Discover similar tracks when your queue runs out.
+- **Queue Management** — Reorder, add, or remove upcoming tracks with ease.
+
+### Your Music Goes Offline
+
+Internet connection? Optional.
+
+- **Offline Playback** — Download music and podcasts for listening anywhere.
+- **Automatic Downloads** — Automatically download liked songs and new podcast episodes.
+- **Wi-Fi Only Downloads** — Avoid unwanted mobile data usage.
+- **Storage Management** — Monitor and manage downloaded content from Settings.
+
+### Your Library, Always in Sync
+
+Your music collection deserves a proper home.
 
 - **YouTube Music Sync** — Sync playlists, albums, artists, podcasts, and liked songs.
 - **Smart Playlists** — Liked Songs, Listening History, Offline Downloads, and My Top 50.
 - **Custom Playlists** — Create and manage your own playlists with optional cloud sync.
 - **Podcast Support** — Browse podcasts and keep track of episode progress.
 
-### Discover & Search
+### Find Your Next Favorite Track
 
-- **Personalized Home** — Quick Picks, mood-based recommendations, and curated lists.
+There's always something new to discover.
+
+- **Personalized Home** — Quick Picks, mood-based recommendations, and curated collections.
 - **Explore** — Discover new releases, charts, genres, and mood stations.
 - **Live Search** — Instant suggestions with filters for songs, albums, artists, playlists, and podcasts.
-- **Link Detection** — Automatically recognize Spotify and YouTube Music links for quick importing.
+- **Smart Link Detection** — Automatically recognize Spotify and YouTube Music links for quick importing.
 
-### Design & Customization
+### A Player That Feels Like Home
 
-- **Minimal Dark Interface** — Pure black backgrounds and clean, distraction-free layouts.
-- **Satoshi Typography** — Modern typography throughout the app.
+Because the little details matter.
+
+- **Minimal Dark Interface** — Pure black backgrounds and distraction-free layouts.
+- **Satoshi Typography** — Modern, clean typography throughout the app.
 - **Floating Navigation** — Smooth capsule-style tabs with a responsive mini-player.
-- **14 Accent Themes** — Choose from a range of colors to personalize the interface.
-- **Player Backgrounds** — Artwork-based glow or a clean, solid dark background.
+- **14 Accent Themes** — Give Audia your own visual identity.
+- **Player Backgrounds** — Choose artwork-based glow effects or a clean, solid dark background.
 - **Regional Controls** — Choose from 14 content regions and manage explicit content filtering.
 
-### Playlist Import
+### Your Privacy Matters
 
-- **Direct Playlist Import** — Import Spotify and YouTube Music playlists simply by pasting a link.
-- **Smart Music Matching** — Automatically find matching tracks using our multi-layer music matching engine.
-- **No Setup Required** — Import Spotify playlists of up to 100 tracks without API keys or account login.
-- **Accurate Track Matching** — Uses ISRC, title, artist, and local caching for reliable results.
+Your music is personal. Your listening experience should be too.
 
-### Privacy
-
-- **No Login Required** — Start listening without creating an account.
+- **No Login Required** — Get started without creating an account.
 - **No Ads or Tracking** — No advertising, trackers, or third-party analytics.
-- **Local History Controls** — Enable or disable search and playback history independently.
-- **Privacy First** — Your listening experience stays focused on your music.
+- **Local History Controls** — Independently enable or disable search and playback history.
+- **Privacy First** — Enjoy your music without unnecessary data collection.
 
-## Installation
+---
 
-Audia can be sideloaded on iOS devices using **AltStore**, **SideStore**, or **Feather**.
+## 🚀 Getting Started
 
-### Sideloading Source URL
-Add the source URL to your sideloading manager:
+Ready to give Audia a spin?
+
+Audia can be installed on compatible iOS devices using your preferred sideloading method.
+
+### Installation Options
+
+| Method | Description |
+|---|---|
+| **AltStore** | Install and refresh apps using AltServer |
+| **SideStore** | Sideload apps directly from your device |
+| **Feather** | Manage and install signed IPA packages |
+
+### 📦 Add Audia as a Source
+
+Copy the source URL below and add it to your sideloading manager.
 
 ```text
 https://raw.githubusercontent.com/Akshayykadam/Audia_iOS/main/altstore.json
 ```
 
-Or download the latest `.ipa` directly from the [Releases](https://github.com/Akshayykadam/Audia_iOS/releases) page.
+Prefer downloading manually?
+
+Head over to [**GitHub Releases**](https://github.com/Akshayykadam/Audia_iOS/releases) and grab the latest `.ipa` file.
 
 ---
 
-## Building from Source
+## 🛠️ Build It Yourself
+
+Want to explore the code, customize Audia, or build your own version? You're welcome to.
 
 ### Requirements
-- macOS running **Xcode 16.0+**
-- iOS 16.0+ deployment target
-- Command Line Tools installed (`xcode-select --install`)
 
-### Build with Xcode
+- macOS with **Xcode 16.0 or later**
+- iOS 16.0+ deployment target
+- Xcode Command Line Tools
+
+Install the command line tools if you haven't already:
+
 ```bash
-git clone https://github.com/Akshayykadam/Audia_iOS.git
-cd Audia_iOS
-xcodebuild -scheme Audia -destination 'generic/platform=iOS Simulator' build
+xcode-select --install
 ```
 
-### Build IPA Package
-To compile and package an unsigned IPA locally:
+### Clone the Repository
+
+```bash
+git clone https://github.com/Akshayykadam/Audia_iOS.git
+
+cd Audia_iOS
+```
+
+### Build with Xcode
+
+```bash
+xcodebuild -scheme Audia \
+  -destination 'generic/platform=iOS Simulator' build
+```
+
+### Build an IPA
+
+Want to package your own build?
+
 ```bash
 ./build_ipa.sh
 ```
-The resulting IPA will be placed in `build/Audia.ipa`.
+
+Your resulting unsigned IPA will be available at:
+
+```text
+build/Audia.ipa
+```
 
 ---
 
-## Credits & Acknowledgments
+## Built on Open Source
 
-Audia is made possible by the open-source community and builds upon the work of several fantastic projects and developers:
+Audia wouldn't be possible without the incredible work of the open-source community.
 
-- **[Trop](https://github.com/SwiftyMedia/Trop)** — Audia was originally forked from Trop by [SwiftyMedia](https://github.com/SwiftyMedia). Huge credit and thanks to the original authors for building the foundational SwiftUI architecture and client concepts.
-- **[SwiftyTube](https://github.com/SwiftyMedia/SwiftyTube)** — Swift client library for interacting with YouTube's InnerTube API, created by SwiftyMedia.
-- **[MPVKit](https://github.com/mpvkit/MPVKit)** & **[mpv](https://mpv.io/)** — The high-performance, cross-platform media player powering Audia's audio engine, equalizers, loudness normalization, and Metal-accelerated video pipeline.
-- **[GRDB.swift](https://github.com/groue/GRDB.swift)** — Robust SQLite toolkit by Gwendal Roué, powering offline downloads, library caching, and listening history.
-- **[Nuke](https://github.com/kean/Nuke)** — Fast image loading, disk caching, and preheating framework by Alexander Grebenyuk.
-- **[Marquee](https://github.com/SwiftUIKit/Marquee)** — Smooth marquee scrolling animation for SwiftUI.
-- **[Satoshi Font](https://www.fontshare.com/fonts/satoshi)** — Clean geometric typeface designed by the Indian Type Foundry and distributed via Fontshare.
+A huge thank you to the developers and maintainers behind these projects:
+
+| Project | What It Does |
+|---|---|
+| [Trop](https://github.com/SwiftyMedia/Trop) | Original project and foundational SwiftUI architecture |
+| [SwiftyTube](https://github.com/SwiftyMedia/SwiftyTube) | Swift client for YouTube's InnerTube API |
+| [MPVKit](https://github.com/mpvkit/MPVKit) | Media playback engine integration |
+| [mpv](https://mpv.io/) | Powerful cross-platform media player |
+| [GRDB.swift](https://github.com/groue/GRDB.swift) | SQLite database toolkit |
+| [Nuke](https://github.com/kean/Nuke) | Image loading and caching |
+| [Marquee](https://github.com/SwiftUIKit/Marquee) | Smooth scrolling text for SwiftUI |
+| [Satoshi](https://www.fontshare.com/fonts/satoshi) | Typeface by Indian Type Foundry |
+
+**Special thanks to [SwiftyMedia](https://github.com/SwiftyMedia)** for creating Trop, the project Audia was originally forked from. Audia builds upon that foundation and extends it with its own features, design, and playback experience.
+
+Please check the respective projects for their individual licenses and attribution requirements.
 
 ---
 
-## Licenses
+## 📄 License
 
-### Project License
-Audia is free and open-source software released under the **[GNU General Public License v3.0](LICENSE)** (GPL-3.0). See the [LICENSE](LICENSE) file for the full license text.
+Audia is free and open-source software licensed under the **[GNU General Public License v3.0](LICENSE)**.
+
+You are welcome to study, modify, and redistribute the source code in accordance with the terms of GPL-3.0.
+
+See the [LICENSE](LICENSE) file for the complete license.
 
 ---
 
-## Disclaimer
+## ⚠️ Disclaimer & Third-Party Services
 
-Audia is an independent open-source client and is not affiliated with, endorsed by, or associated with Google LLC or YouTube.
+Audia is an **independent, community-developed open-source project**. It is not affiliated with, endorsed by, sponsored by, or officially associated with Google LLC, YouTube, YouTube Music, Spotify AB, or any of their subsidiaries or affiliates.
+
+All third-party names, logos, trademarks, and service marks belong to their respective owners and are used solely for identification and compatibility purposes.
+
+Audia is an unofficial client that interacts with third-party services and publicly accessible content. It is not an official YouTube Music or Spotify application, nor is it intended to impersonate or replace their official products.
+
+**Please keep the following in mind:**
+
+- **Third-party services:** Audia depends on services and interfaces that are not controlled by this project. Their availability, functionality, and compatibility may change without notice.
+- **Content ownership:** Audia does not own, host, or claim ownership of music, videos, or other third-party content accessed through the application. All rights remain with their respective copyright holders.
+- **User responsibility:** Users are responsible for ensuring that their use of Audia complies with applicable laws, copyright requirements, and the terms and policies of the services they access.
+- **No guarantees:** This software is provided "AS IS", without warranties or guarantees of any kind, to the maximum extent permitted by applicable law.
+
+The developers and contributors are not responsible for misuse of the application, copyright infringement, third-party service restrictions, or any resulting claims or damages, to the extent permitted by law.
+
+---
+
+<p align="center">
+  <strong>Made for the love of music.</strong>
+  <br />
+  <sub>Built with SwiftUI. Powered by open source. Enjoyed by you.</sub>
+  <br /><br />
+  ⭐ If you like Audia, consider starring the repository!
+</p>
