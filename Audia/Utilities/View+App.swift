@@ -58,12 +58,12 @@ extension View {
     }
 
     /// Circular iOS 26 Liquid Glass treatment with an ultra-thin material fallback.
-    func audiaGlassCircle(isActive: Bool = false) -> some View {
-        modifier(AudiaGlassCircleModifier(isActive: isActive))
+    func audiaGlassCircle(isActive: Bool = false, isInteractive: Bool = false) -> some View {
+        modifier(AudiaGlassCircleModifier(isActive: isActive, isInteractive: isInteractive))
     }
 
     /// Capsule iOS 26 Liquid Glass treatment with an ultra-thin material fallback.
-    func audiaGlassCapsule(isActive: Bool = false, isInteractive: Bool = true) -> some View {
+    func audiaGlassCapsule(isActive: Bool = false, isInteractive: Bool = false) -> some View {
         modifier(AudiaGlassCapsuleModifier(isActive: isActive, isInteractive: isInteractive))
     }
 
@@ -141,6 +141,7 @@ struct AudiaGlassCapsuleModifier: ViewModifier {
 
 struct AudiaGlassCircleModifier: ViewModifier {
     var isActive: Bool = false
+    var isInteractive: Bool = false
     @Environment(\.colorScheme) private var colorScheme
 
     @ViewBuilder
@@ -152,8 +153,8 @@ struct AudiaGlassCircleModifier: ViewModifier {
             content
                 .glassEffect(
                     isActive
-                        ? .regular.tint(tintColor).interactive()
-                        : .regular.interactive(),
+                        ? .regular.tint(tintColor).interactive(isInteractive)
+                        : .regular.interactive(isInteractive),
                     in: .circle
                 )
         } else {

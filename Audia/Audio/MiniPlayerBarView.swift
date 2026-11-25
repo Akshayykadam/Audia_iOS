@@ -175,6 +175,7 @@ struct MiniPlayerBarView: View {
                     .font(.satoshi(size: 18, weight: .bold))
                     .foregroundStyle(AudiaTheme.onPrimary)
             }
+            .contentShape(Circle())
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
         .accessibilityLabel(np.isPlaying ? "Pause" : "Play")
@@ -189,6 +190,7 @@ struct MiniPlayerBarView: View {
                 .font(.satoshi(size: 19, weight: .semibold))
                 .foregroundStyle(AudiaTheme.textSecondary)
                 .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.86))
         .accessibilityLabel("Next song")

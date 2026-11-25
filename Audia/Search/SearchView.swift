@@ -88,6 +88,7 @@ struct SearchView: View {
                     .font(.satoshi(size: 16, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 40, height: 40)
+                    .contentShape(Circle())
                     .audiaGlassCircle()
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))

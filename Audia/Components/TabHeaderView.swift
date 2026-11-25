@@ -100,6 +100,7 @@ struct TabHeaderView: View {
                 .font(.satoshi(size: size, weight: .semibold))
                 .foregroundStyle(AudiaTheme.textPrimary)
                 .frame(width: 40, height: 40)
+                .contentShape(Circle())
                 .audiaGlassCircle()
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))

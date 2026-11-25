@@ -38,7 +38,6 @@ struct ContentView: View {
                         .opacity(selectedTab == 3 ? 1 : 0)
                         .allowsHitTesting(selectedTab == 3)
                 }
-                .animation(.easeOut(duration: 0.18), value: selectedTab)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AudiaTheme.background.ignoresSafeArea())
 
@@ -71,7 +70,6 @@ struct ContentView: View {
             }
             .ignoresSafeArea(edges: .bottom)
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: router.isAtRootTab)
         .toggleStyle(.amoled)
         .overlay {
             if isExpanded {
@@ -86,11 +84,13 @@ struct ContentView: View {
         .environment(scrollState)
         .onAppear { AppRouter.shared.selectedTabIndex = selectedTab }
         .onChange(of: selectedTab) { _, newValue in
-            AppRouter.shared.selectedTabIndex = newValue
+            if router.selectedTabIndex != newValue {
+                router.selectedTabIndex = newValue
+            }
         }
-        .onReceive(AppRouter.shared.$selectedTabIndex) { index in
-            if selectedTab != index {
-                selectedTab = index
+        .onChange(of: router.selectedTabIndex) { _, newIndex in
+            if selectedTab != newIndex {
+                selectedTab = newIndex
             }
         }
         .onReceive(AppRouter.shared.$activeRoute) { route in
@@ -104,16 +104,6 @@ struct ContentView: View {
             guard nowPlaying.isBarPresented else { return }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                 isExpanded = true
-            }
-        }
-        .onChange(of: router.selectedTabIndex) { _, newIndex in
-            if selectedTab != newIndex {
-                selectedTab = newIndex
-            }
-        }
-        .onChange(of: selectedTab) { _, newIndex in
-            if router.selectedTabIndex != newIndex {
-                router.selectedTabIndex = newIndex
             }
         }
         .simultaneousGesture(backSwipeGesture)
@@ -182,6 +172,7 @@ struct AudiaSolidTabBar: View {
                     .scaleEffect(isSelected ? 1.04 : 1.0)
             }
             .frame(width: 56, height: 46)
+            .contentShape(Rectangle())
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
     }

@@ -45,8 +45,8 @@ struct FullPlayerView: View {
         )
     }
     @State private var showQueue = false
-    @State private var showLyrics = false
-    @State private var showTranslation = false
+    @AppStorage("playerShowLyrics") private var showLyrics = false
+    @AppStorage("playerShowLyricsTranslation") private var showTranslation = true
     @State private var isTranslating = false
     @State private var hasLyrics = false
     @State private var pendingRoute: DetailRoute?
@@ -246,6 +246,7 @@ struct FullPlayerView: View {
             }
         }
         .padding(.horizontal, showLyrics ? 16 : 0)
+        .padding(.top, showLyrics ? 12 : 0)
         .padding(.bottom, showLyrics ? 4 : (isCompact ? 12 : 20))
 
         if showLyrics {
