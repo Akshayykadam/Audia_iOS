@@ -56,20 +56,21 @@ struct LibraryView: View {
 
     var body: some View {
         NavigationStack(path: $router.libraryPath) {
-            VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                Group {
+                    if isLoading {
+                        librarySkeleton
+                            .padding(.top, 62)
+                    } else {
+                        feedContent
+                    }
+                }
+
                 TabHeaderView(
                     title: "Library",
                     onAdd: { showCreateDialog = true },
                     onAccount: { router.libraryPath.append(DetailRoute.settings) }
                 )
-
-                Group {
-                    if isLoading {
-                        librarySkeleton
-                    } else {
-                        feedContent
-                    }
-                }
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .toolbar(.hidden, for: .navigationBar)
@@ -141,6 +142,7 @@ struct LibraryView: View {
     private var feedContent: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
+                Color.clear.frame(height: 62)
                 autoPlaylistsList
                 playlistsAndAlbumsSection
             }

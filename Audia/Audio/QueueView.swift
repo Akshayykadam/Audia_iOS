@@ -157,7 +157,7 @@ struct QueueView<ProgressSlider: View>: View {
                 if !np.queueSongs.isEmpty {
                     Text("\(np.queueSongs.count) \(np.queueSongs.count == 1 ? "track" : "tracks")")
                         .font(.satoshi(size: 13.5, weight: .medium))
-                        .foregroundStyle(AudiaTheme.textMuted)
+                        .foregroundStyle(Color.primary.opacity(0.6))
                 }
             }
 
@@ -171,11 +171,10 @@ struct QueueView<ProgressSlider: View>: View {
                 } label: {
                     Text("Clear")
                         .font(.satoshi(size: 13.5, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.textSecondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(AudiaTheme.surfaceVariant))
-                        .overlay(Capsule().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .audiaGlassCapsule()
                 }
             } else {
                 Color.clear.frame(width: 34, height: 34)
@@ -199,7 +198,7 @@ struct QueueView<ProgressSlider: View>: View {
         HStack {
             Text("Now Playing")
                 .font(.satoshi(size: 13, weight: .bold))
-                .foregroundStyle(AudiaTheme.textMuted)
+                .foregroundStyle(Color.primary.opacity(0.6))
                 .textCase(.uppercase)
                 .tracking(0.6)
 
@@ -234,7 +233,7 @@ struct QueueView<ProgressSlider: View>: View {
                         if !artistStr.isEmpty {
                             Text(artistStr)
                                 .font(.satoshi(size: 13))
-                                .foregroundStyle(AudiaTheme.textSecondary)
+                                .foregroundStyle(Color.primary.opacity(0.72))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                         }
@@ -244,14 +243,7 @@ struct QueueView<ProgressSlider: View>: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(AudiaTheme.surfaceVariant)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
-                )
+                .audiaGlassCard(cornerRadius: 16)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
@@ -274,14 +266,14 @@ struct QueueView<ProgressSlider: View>: View {
             HStack(spacing: 6) {
                 Text("Up Next")
                     .font(.satoshi(size: 13, weight: .bold))
-                    .foregroundStyle(AudiaTheme.textMuted)
+                    .foregroundStyle(Color.primary.opacity(0.6))
                     .textCase(.uppercase)
                     .tracking(0.6)
 
                 if upcomingSongsCount > 0 {
                     Text("(\(upcomingSongsCount))")
                         .font(.satoshi(size: 13, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.textMuted)
+                        .foregroundStyle(Color.primary.opacity(0.6))
                 }
             }
 
@@ -306,7 +298,7 @@ struct QueueView<ProgressSlider: View>: View {
         HStack {
             Text("Previously Played")
                 .font(.satoshi(size: 13, weight: .bold))
-                .foregroundStyle(AudiaTheme.textMuted)
+                .foregroundStyle(Color.primary.opacity(0.6))
                 .textCase(.uppercase)
                 .tracking(0.6)
 
@@ -464,7 +456,7 @@ struct QueueSongRow: View {
                 if !artistStr.isEmpty {
                     Text(artistStr)
                         .font(.satoshi(size: 14))
-                        .foregroundStyle(AudiaTheme.textSecondary.opacity(isPlayed ? 0.5 : 0.85))
+                        .foregroundStyle(Color.primary.opacity(isPlayed ? 0.42 : 0.72))
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
@@ -474,7 +466,7 @@ struct QueueSongRow: View {
 
             Image(systemName: "line.3.horizontal")
                 .font(.satoshi(size: 15, weight: .regular))
-                .foregroundStyle(AudiaTheme.textMuted.opacity(0.4))
+                .foregroundStyle(Color.primary.opacity(0.35))
                 .padding(.leading, 6)
         }
         .padding(.horizontal, 20)
@@ -484,6 +476,6 @@ struct QueueSongRow: View {
     }
 
     private var titleColor: Color {
-        isPlayed ? AudiaTheme.textMuted : AudiaTheme.textPrimary
+        isPlayed ? Color.primary.opacity(0.45) : AudiaTheme.textPrimary
     }
 }

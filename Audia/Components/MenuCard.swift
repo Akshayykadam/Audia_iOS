@@ -10,9 +10,11 @@ import SwiftUI
 /// Content needing `navigationDestination` should wrap itself in a `Group`
 /// carrying that modifier (it must live inside the NavigationStack).
 struct SheetChrome<Content: View>: View {
+    var detents: Set<PresentationDetent> = [.medium, .large]
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(detents: Set<PresentationDetent> = [.medium, .large], @ViewBuilder content: () -> Content) {
+        self.detents = detents
         self.content = content()
     }
 
@@ -22,15 +24,17 @@ struct SheetChrome<Content: View>: View {
                 VStack(spacing: 16) {
                     content
                 }
-                .padding(16)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
             }
             .scrollContentBackground(.hidden)
-            .background(AudiaTheme.sheetBackground)
+            .background(Color.clear)
             .navigationBarTitleDisplayMode(.inline)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(AudiaTheme.sheetBackground)
+        .presentationDetents(detents)
+        .presentationDragIndicator(.hidden)
+        .audiaSheetBackground()
     }
 }
 
@@ -46,14 +50,6 @@ struct MenuCard<Content: View>: View {
         VStack(spacing: 0) {
             content
         }
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .fill(AudiaTheme.sheetSurface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
-        )
     }
 }
 

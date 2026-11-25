@@ -12,6 +12,7 @@ struct ProgressBar: View {
     let accentColor: Color
     let isPlaying: Bool
     let onEditingChanged: (Bool) -> Void
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isDragging = false
     @State private var lastHapticStep = -1
 
@@ -23,7 +24,7 @@ struct ProgressBar: View {
             ZStack(alignment: .leading) {
                 // Remaining track (unwatched)
                 Capsule()
-                    .fill(AudiaTheme.surfaceElevated)
+                    .fill(Color.primary.opacity(colorScheme == .dark ? 0.22 : 0.14))
                     .frame(height: isDragging ? 11 : 7)
 
                 // Elapsed track (watched, marked)

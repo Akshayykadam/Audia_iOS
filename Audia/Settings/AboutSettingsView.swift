@@ -10,10 +10,11 @@ struct AboutSettingsView: View {
         List {
             Section {
                 if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+                    let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text(version)
+                        Text(build.map { "\(version) (\($0))" } ?? version)
                             .foregroundStyle(.secondary)
                     }
                 }

@@ -527,11 +527,16 @@ struct PlaylistDetailView: View {
         HStack(spacing: 8) {
             topBarBackButton
 
+            Spacer(minLength: 0)
+
             if let playlist = viewModel.playlist {
                 Text(playlist.title)
                     .font(.satoshi(.headline))
                     .foregroundStyle(AudiaTheme.textPrimary)
                     .lineLimit(1)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .audiaGlassCapsule(isInteractive: false)
                     .opacity(barProgress)
             }
 
@@ -541,15 +546,20 @@ struct PlaylistDetailView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(
-            Color(.systemBackground)
-                .opacity(barProgress)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
-        )
-        .overlay(alignment: .bottom) {
-            Divider()
-                .opacity(barProgress)
+        .background(alignment: .top) {
+            LinearGradient(
+                stops: [
+                    .init(color: AudiaTheme.background, location: 0.0),
+                    .init(color: AudiaTheme.background.opacity(0.85), location: 0.55),
+                    .init(color: AudiaTheme.background.opacity(0.0), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 110)
+            .opacity(barProgress)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
         }
     }
 

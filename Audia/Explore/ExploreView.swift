@@ -13,13 +13,13 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack(path: $router.explorePath) {
-            VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                content
+
                 TabHeaderView(
                     title: "Explore",
                     onAccount: { router.explorePath.append(DetailRoute.settings) }
                 )
-
-                content
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .audiaScreenBackground()
@@ -68,8 +68,11 @@ struct ExploreView: View {
 
     private var sectionsList: some View {
         ScrollView {
-            ExploreSectionsList(sections: viewModel.sections, pendingRoute: $pendingRoute)
-                .appBottomClearance(isRootTab: true)
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 62)
+                ExploreSectionsList(sections: viewModel.sections, pendingRoute: $pendingRoute)
+            }
+            .appBottomClearance(isRootTab: true)
         }
         .scrollIndicators(.automatic)
         .miniPlayerTracksScroll()

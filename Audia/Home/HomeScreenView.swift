@@ -15,21 +15,35 @@ struct HomeScreenView: View {
 
     var body: some View {
         NavigationStack(path: $router.homePath) {
-            VStack(spacing: 0) {
-                TabHeaderView(
-                    title: "Home",
-                    onAccount: { router.homePath.append(DetailRoute.settings) }
-                )
-
+            ZStack(alignment: .top) {
                 if viewModel.isLoading {
-                    Spacer()
-                    ShimmerLoadingView()
-                    Spacer()
+                    VStack {
+                        Spacer()
+                        ShimmerLoadingView()
+                        Spacer()
+                    }
                 } else if let error = viewModel.error {
                     errorView(error)
                 } else {
                     homescreenContent
                         .transition(.opacity)
+                }
+
+                VStack(spacing: 0) {
+                    let hasChips = !viewModel.isLoading && viewModel.error == nil && (viewModel.homePage?.chips.isEmpty == false)
+                    TabHeaderView(
+                        title: "Home",
+                        scrimHeight: hasChips ? 185 : 135,
+                        onAccount: { router.homePath.append(DetailRoute.settings) }
+                    )
+
+                    if hasChips, let chips = viewModel.homePage?.chips {
+                        ChipsRowView(
+                            chips: chips,
+                            selectedChip: viewModel.selectedChip,
+                            onChipTap: { viewModel.toggleChip($0) }
+                        )
+                    }
                 }
             }
             .animation(.easeOut(duration: 0.28), value: viewModel.isLoading)
@@ -66,15 +80,10 @@ struct HomeScreenView: View {
     }
 
     private var homescreenContent: some View {
-        ScrollView {
+        let hasChips = (viewModel.homePage?.chips.isEmpty == false)
+        return ScrollView {
             LazyVStack(spacing: 0) {
-                if let chips = viewModel.homePage?.chips, !chips.isEmpty {
-                    ChipsRowView(
-                        chips: chips,
-                        selectedChip: viewModel.selectedChip,
-                        onChipTap: { viewModel.toggleChip($0) }
-                    )
-                }
+                Color.clear.frame(height: hasChips ? 110 : 62)
 
                 ForEach(viewModel.homeSections) { section in
                     sectionView(for: section)

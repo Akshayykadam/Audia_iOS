@@ -185,7 +185,7 @@ struct LyricsScrollSection: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .blur(radius: blurRadius)
+        .blur(radius: isUserScrolling ? 0 : blurRadius)
         .scaleEffect(isSynced ? (isActive ? 1.0 : 0.95) : 1.0, anchor: .leading)
         .animation(.spring(response: 0.55, dampingFraction: 0.84), value: activeLineIndex)
         .animation(.easeInOut(duration: 0.25), value: showTranslation)

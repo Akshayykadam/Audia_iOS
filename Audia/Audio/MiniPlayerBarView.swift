@@ -61,14 +61,10 @@ struct MiniPlayerBarView: View {
         }
         .frame(height: barHeight)
         .frame(maxWidth: .infinity)
-        .background(
-            Capsule()
-                .fill(AudiaTheme.surface)
-        )
         .overlay(alignment: .bottom) { MiniPlayerProgressBar() }
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(AudiaTheme.surfaceBorder, lineWidth: 1.5))
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.08), radius: 14, y: 5)
+        .audiaGlassCapsule()
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.08), radius: 14, y: 5)
         .padding(.horizontal, 16)
         .onChange(of: np.videoId) { _, _ in
             dragOffset = 0

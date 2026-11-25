@@ -153,15 +153,8 @@ struct AudiaSolidTabBar: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(AudiaTheme.surface)
-        )
-        .overlay(
-            Capsule()
-                .stroke(AudiaTheme.surfaceBorder, lineWidth: 1.2)
-        )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.08), radius: 16, y: 6)
+        .audiaGlassCapsule()
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.08), radius: 16, y: 6)
     }
 
     private func tabButton(icon: String, selectedIcon: String, index: Int) -> some View {
@@ -177,7 +170,7 @@ struct AudiaSolidTabBar: View {
             ZStack {
                 if isSelected {
                     Capsule(style: .continuous)
-                        .fill(AudiaTheme.surfaceVariant)
+                        .fill(colorScheme == .dark ? Color.white.opacity(0.16) : Color.black.opacity(0.08))
                         .frame(width: 56, height: 40)
                         .matchedGeometryEffect(id: "activeTabPill", in: tabNamespace)
                 }

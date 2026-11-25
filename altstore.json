@@ -25,6 +25,15 @@
       ],
       "versions": [
         {
+          "version": "0.0.2",
+          "buildVersion": "2",
+          "date": "2026-11-26T00:00:00Z",
+          "localizedDescription": "Apple Music-style synced lyrics with translation, Liquid Glass UI across player/tabs/chips/search, playback mode cycling (shuffle/repeat all/repeat 1), enhanced haptics, widget & scroll performance fixes.\n\n[Discord](https://discord.gg/QrMwZAfU97)",
+          "downloadURL": "https://github.com/Akshayykadam/Audia_iOS/releases/download/v0.0.2/Audia.ipa",
+          "size": 35924605,
+          "minOSVersion": "16.0"
+        },
+        {
           "version": "0.0.1",
           "buildVersion": "1",
           "date": "2026-11-24T00:00:00Z",

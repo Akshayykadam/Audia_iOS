@@ -17,14 +17,17 @@ struct SearchView: View {
 
     var body: some View {
         NavigationStack(path: $router.searchPath) {
-            VStack(spacing: 0) {
-                searchTopBar
-
-                if let linkType = PlaylistLinkParser.parse(viewModel.fieldText) {
-                    importBanner(for: linkType)
-                }
-
+            ZStack(alignment: .top) {
                 content
+                    .contentMargins(.top, PlaylistLinkParser.parse(viewModel.fieldText) != nil ? 124 : 62, for: .scrollContent)
+
+                VStack(spacing: 0) {
+                    searchTopBar
+
+                    if let linkType = PlaylistLinkParser.parse(viewModel.fieldText) {
+                        importBanner(for: linkType)
+                    }
+                }
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .toolbar(.hidden, for: .navigationBar)
@@ -84,10 +87,10 @@ struct SearchView: View {
                 Image(systemName: "chevron.left")
                     .font(.satoshi(size: 16, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 36, height: 36)
-                    .background(AudiaTheme.surfaceVariant, in: Circle())
+                    .frame(width: 40, height: 40)
+                    .audiaGlassCircle()
             }
-            .buttonStyle(.plain)
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
             .accessibilityLabel("Back")
 
             HStack(spacing: 8) {
@@ -113,43 +116,25 @@ struct SearchView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(AudiaTheme.surfaceVariant)
-            )
-            .overlay(
-                Capsule()
-                    .stroke(AudiaTheme.surfaceBorder, lineWidth: 1)
-            )
-
-            sortMenu
+            .audiaGlassCapsule()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-    }
-
-    private var sortMenu: some View {
-        Menu {
-            ForEach(SearchSort.allCases, id: \.self) { option in
-                Button {
-                    viewModel.sort = option
-                } label: {
-                    if viewModel.sort == option {
-                        Label(LocalizedStringKey(option.title), systemImage: "checkmark")
-                    } else {
-                        Text(LocalizedStringKey(option.title))
-                    }
-                }
-            }
-        } label: {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(.satoshi(size: 15, weight: .semibold))
-                .foregroundStyle(AudiaTheme.textSecondary)
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(AudiaTheme.surfaceVariant))
-                .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+        .background(alignment: .top) {
+            LinearGradient(
+                stops: [
+                    .init(color: AudiaTheme.background, location: 0.0),
+                    .init(color: AudiaTheme.background.opacity(0.92), location: 0.48),
+                    .init(color: AudiaTheme.background.opacity(0.55), location: 0.78),
+                    .init(color: AudiaTheme.background.opacity(0), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 135)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
         }
-        .accessibilityLabel("Sort results")
     }
 
     // MARK: - Import Link Banner
@@ -419,12 +404,6 @@ struct SearchView: View {
     private var searchResultsList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                if let hero = viewModel.heroArtist {
-                    artistHeroCard(hero, songs: viewModel.heroSongs)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                }
-
                 ForEach(viewModel.filteredResults) { section in
                     sectionHeader(section.title)
 

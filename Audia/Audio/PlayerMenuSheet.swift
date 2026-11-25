@@ -33,7 +33,7 @@ struct PlayerMenuSheet: View {
     @ObservedObject private var downloadManager = DownloadManager.shared
 
     var body: some View {
-        SheetChrome {
+        SheetChrome(detents: [.height(370), .large]) {
             Group {
                 // Top 3 action boxes: Save, Download, Share
                 topActionBoxes
@@ -108,12 +108,7 @@ struct PlayerMenuSheet: View {
     // MARK: - App Volume Slider
 
     private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(AudiaTheme.sheetSurface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
-            )
+        Color.clear
     }
 
     private var volumeCard: some View {
@@ -228,15 +223,7 @@ struct PlayerMenuSheet: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 66)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(AudiaTheme.sheetSurface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(AudiaTheme.sheetBorder, lineWidth: 1)
-                )
-        )
+        .frame(height: 60)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 

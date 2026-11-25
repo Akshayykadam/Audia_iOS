@@ -32,8 +32,18 @@ extension View {
     func appSheetChrome(_ detents: Set<PresentationDetent> = [.medium, .large]) -> some View {
         presentationDetents(detents)
             .presentationDragIndicator(.visible)
-            .presentationBackground(AudiaTheme.sheetBackground)
+            .audiaSheetBackground()
             .font(.satoshi(.body))
+    }
+
+    /// Uses native iOS 26 Liquid Glass sheet background on iOS 26+, falling back to ultraThinMaterial.
+    @ViewBuilder
+    func audiaSheetBackground() -> some View {
+        if #available(iOS 26.0, *) {
+            self
+        } else {
+            self.presentationBackground(.ultraThinMaterial)
+        }
     }
 
     /// Dynamic bottom clearance for scrollable views, ensuring content can be scrolled
@@ -50,6 +60,82 @@ extension View {
     /// Circular iOS 26 Liquid Glass treatment with an ultra-thin material fallback.
     func audiaGlassCircle(isActive: Bool = false) -> some View {
         modifier(AudiaGlassCircleModifier(isActive: isActive))
+    }
+
+    /// Capsule iOS 26 Liquid Glass treatment with an ultra-thin material fallback.
+    func audiaGlassCapsule(isActive: Bool = false, isInteractive: Bool = true) -> some View {
+        modifier(AudiaGlassCapsuleModifier(isActive: isActive, isInteractive: isInteractive))
+    }
+
+    /// Rounded-rectangle iOS 26 Liquid Glass card treatment with an ultra-thin material fallback.
+    func audiaGlassCard(cornerRadius: CGFloat = 16, isInteractive: Bool = false) -> some View {
+        modifier(AudiaGlassCardModifier(cornerRadius: cornerRadius, isInteractive: isInteractive))
+    }
+}
+
+struct AudiaGlassCardModifier: ViewModifier {
+    var cornerRadius: CGFloat = 16
+    var isInteractive: Bool = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if #available(iOS 26.0, *) {
+            content
+                .glassEffect(
+                    isInteractive ? .regular.interactive() : .regular,
+                    in: shape
+                )
+        } else {
+            content
+                .background(.ultraThinMaterial, in: shape)
+                .overlay(
+                    shape.stroke(
+                        colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08),
+                        lineWidth: 0.8
+                    )
+                )
+        }
+    }
+}
+
+struct AudiaGlassCapsuleModifier: ViewModifier {
+    var isActive: Bool = false
+    var isInteractive: Bool = true
+    @Environment(\.colorScheme) private var colorScheme
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        let tintColor: Color = colorScheme == .dark
+            ? Color.white.opacity(0.28)
+            : Color.black.opacity(0.14)
+        if #available(iOS 26.0, *) {
+            content
+                .glassEffect(
+                    isActive
+                        ? .regular.tint(tintColor).interactive(isInteractive)
+                        : .regular.interactive(isInteractive),
+                    in: .capsule
+                )
+        } else {
+            let fill = colorScheme == .dark
+                ? Color.white.opacity(isActive ? 0.24 : 0.10)
+                : Color.black.opacity(isActive ? 0.14 : 0.06)
+            let stroke = colorScheme == .dark
+                ? Color.white.opacity(isActive ? 0.36 : 0.14)
+                : Color.black.opacity(isActive ? 0.22 : 0.10)
+            content
+                .background(
+                    Capsule()
+                        .fill(fill)
+                        .background(.ultraThinMaterial, in: Capsule())
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(stroke, lineWidth: 0.8)
+                )
+        }
     }
 }
 

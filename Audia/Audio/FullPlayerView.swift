@@ -64,7 +64,7 @@ struct FullPlayerView: View {
                 AudiaTheme.background
                     .ignoresSafeArea()
 
-                lyricsAmbientBackground(size: geometry.size)
+                LyricsAmbientBackgroundView(colorScheme: colorScheme)
 
                 VStack(spacing: 0) {
                     if !settings.audioOnlyMode && np.isVideoMode && np.hasVideo {
@@ -308,54 +308,62 @@ struct FullPlayerView: View {
         }
     }
 
-    private func lyricsAmbientBackground(size: CGSize) -> some View {
+private struct LyricsAmbientBackgroundView: View {
+    let colorScheme: ColorScheme
+    private let np = NowPlaying.shared
+
+    var body: some View {
         let isDark = colorScheme == .dark
-        return ZStack {
-            if let primary = np.dominantColors.first {
-                let secondary = np.dominantColors.count > 1 ? np.dominantColors[1] : primary
+        GeometryReader { geo in
+            ZStack {
+                if let primary = np.dominantColors.first {
+                    let secondary = np.dominantColors.count > 1 ? np.dominantColors[1] : primary
+                    LinearGradient(
+                        colors: isDark
+                            ? [primary.opacity(0.75), secondary.opacity(0.45), Color.black.opacity(0.88)]
+                            : [primary.opacity(0.28), secondary.opacity(0.18), Color.white.opacity(0.92)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                } else {
+                    AudiaTheme.background
+                }
+
+                if let uiImage = np.thumbnailUIImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                        .saturation(isDark ? 1.45 : 1.15)
+                        .blur(radius: 85)
+                        .scaleEffect(1.3)
+                        .opacity(isDark ? 0.55 : 0.24)
+                }
+
                 LinearGradient(
-                    colors: isDark
-                        ? [primary.opacity(0.75), secondary.opacity(0.45), Color.black.opacity(0.88)]
-                        : [primary.opacity(0.28), secondary.opacity(0.18), Color.white.opacity(0.92)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    stops: isDark
+                        ? [
+                            .init(color: Color.black.opacity(0.28), location: 0.0),
+                            .init(color: Color.black.opacity(0.15), location: 0.45),
+                            .init(color: Color.black.opacity(0.52), location: 1.0)
+                        ]
+                        : [
+                            .init(color: Color.white.opacity(0.55), location: 0.0),
+                            .init(color: Color.white.opacity(0.38), location: 0.45),
+                            .init(color: Color.white.opacity(0.65), location: 1.0)
+                        ],
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
-            } else {
-                AudiaTheme.background
             }
-
-            if let uiImage = np.thumbnailUIImage {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size.width, height: size.height)
-                    .clipped()
-                    .saturation(isDark ? 1.45 : 1.15)
-                    .blur(radius: 85)
-                    .scaleEffect(1.3)
-                    .opacity(isDark ? 0.55 : 0.24)
-            }
-
-            LinearGradient(
-                stops: isDark
-                    ? [
-                        .init(color: Color.black.opacity(0.28), location: 0.0),
-                        .init(color: Color.black.opacity(0.15), location: 0.45),
-                        .init(color: Color.black.opacity(0.52), location: 1.0)
-                    ]
-                    : [
-                        .init(color: Color.white.opacity(0.55), location: 0.0),
-                        .init(color: Color.white.opacity(0.38), location: 0.45),
-                        .init(color: Color.white.opacity(0.65), location: 1.0)
-                    ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            .drawingGroup()
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .animation(.easeInOut(duration: 0.65), value: np.videoId)
     }
+}
 
     private func playbackControls(isCompact: Bool) -> some View {
         PlaybackControlsRow(

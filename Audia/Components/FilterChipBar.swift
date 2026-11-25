@@ -18,47 +18,45 @@ struct FilterChipBar<Item, ID: Hashable>: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(items, id: id) { item in
-                    let selected = isSelected(item)
-                    Button {
-                        if !selected {
-                            Haptics.selection()
-                        }
-                        withAnimation(.spring(response: 0.36, dampingFraction: 0.8)) {
-                            onTap(item)
-                        }
-                    } label: {
-                        Text(LocalizedStringKey(title(item)))
-                            .font(.satoshi(size: 14.5, weight: selected ? .bold : .medium))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background {
-                                if selected {
-                                    Capsule()
-                                        .fill(AudiaTheme.primary)
-                                        .matchedGeometryEffect(id: "selectedChipPill", in: chipNamespace)
-                                } else {
-                                    Capsule()
-                                        .fill(AudiaTheme.surfaceVariant)
-                                        .overlay(
-                                            Capsule()
-                                                .strokeBorder(AudiaTheme.surfaceBorder, lineWidth: 1)
-                                        )
-                                }
-                            }
-                            .foregroundStyle(selected
-                                ? AudiaTheme.onPrimary
-                                : AudiaTheme.textPrimary)
-                            .foregroundColor(selected
-                                ? AudiaTheme.onPrimary
-                                : AudiaTheme.textPrimary)
-                    }
-                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.92))
-                }
+            chipRow
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+        }
+        .scrollClipDisabled()
+    }
+
+    @ViewBuilder
+    private var chipRow: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 8) {
+                chipsHStack
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+        } else {
+            chipsHStack
+        }
+    }
+
+    private var chipsHStack: some View {
+        HStack(spacing: 8) {
+            ForEach(items, id: id) { item in
+                let selected = isSelected(item)
+                Button {
+                    if !selected {
+                        Haptics.selection()
+                    }
+                    withAnimation(.spring(response: 0.36, dampingFraction: 0.8)) {
+                        onTap(item)
+                    }
+                } label: {
+                    Text(LocalizedStringKey(title(item)))
+                        .font(.satoshi(size: 14.5, weight: selected ? .bold : .medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .audiaGlassCapsule(isActive: selected)
+                }
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.92))
+            }
         }
     }
 }
