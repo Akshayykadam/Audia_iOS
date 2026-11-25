@@ -119,9 +119,11 @@ struct QueueView<ProgressSlider: View>: View {
                         isPlaying: np.isPlaying,
                         hasPrevious: np.hasPrevious,
                         hasNext: np.hasNext,
+                        playbackMode: np.playbackMode,
                         onPrevious: { np.playPrevious() },
                         onPlayPause: { player.togglePlayPause() },
-                        onNext: { np.playNext() }
+                        onNext: { np.playNext() },
+                        onCyclePlaybackMode: { np.cyclePlaybackMode() }
                     )
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: np.isPlaying)
                 }
@@ -142,9 +144,8 @@ struct QueueView<ProgressSlider: View>: View {
                 Image(systemName: "chevron.down")
                     .font(.satoshi(size: 14, weight: .bold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 34, height: 34)
-                    .background(Circle().fill(AudiaTheme.surfaceVariant))
-                    .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+                    .frame(width: 38, height: 38)
+                    .audiaGlassCircle(isActive: false)
             }
 
             Spacer()
@@ -385,6 +386,7 @@ struct QueueView<ProgressSlider: View>: View {
     }
 
     private func moveUpcomingSongs(from source: IndexSet, to destination: Int) {
+        Haptics.selection()
         let offset = np.queueIndex + 1
         let mappedSource = IndexSet(source.map { $0 + offset })
         let mappedDestination = destination + offset
@@ -392,6 +394,7 @@ struct QueueView<ProgressSlider: View>: View {
     }
 
     private func clearUpcomingQueue() {
+        Haptics.soft()
         guard np.queueSongs.indices.contains(np.queueIndex) else { return }
         np.queueSongs = Array(np.queueSongs[0...np.queueIndex])
         np.persistQueueState()
@@ -399,6 +402,7 @@ struct QueueView<ProgressSlider: View>: View {
 
     private func playSong(at index: Int) {
         guard np.queueSongs.indices.contains(index) else { return }
+        Haptics.playTrack()
         np.lastManualSkipTime = Date()
         np.queueIndex = index
         np.playCurrentSong(logContext: "resolveAndPlay", manageResolvingFlag: false)
@@ -406,6 +410,7 @@ struct QueueView<ProgressSlider: View>: View {
 
     private func removeSong(at index: Int) {
         guard np.queueSongs.indices.contains(index) else { return }
+        Haptics.warning()
         let wasCurrent = index == np.queueIndex
         let removedVideoId = np.queueSongs[index].videoId
         np.queueSongs.remove(at: index)

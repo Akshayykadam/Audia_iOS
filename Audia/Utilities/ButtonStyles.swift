@@ -22,10 +22,11 @@ struct BouncyScaleButtonStyle: ButtonStyle {
 struct SongRowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0.0))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.07 : 0.0))
             )
-            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+            .animation(.spring(response: 0.24, dampingFraction: 0.76), value: configuration.isPressed)
     }
 }

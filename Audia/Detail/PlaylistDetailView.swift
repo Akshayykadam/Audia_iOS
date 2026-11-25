@@ -399,14 +399,10 @@ struct PlaylistDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    @State private var scrollOffset: CGFloat = 0
+    @State private var barProgress: CGFloat = 0
     private static let barFadeStart: CGFloat = 160
     private static let barFadeDistance: CGFloat = 60
     private static let iPadBannerHeight: CGFloat = 400
-
-    private var barProgress: CGFloat {
-        min(max((scrollOffset - Self.barFadeStart) / Self.barFadeDistance, 0), 1)
-    }
 
     init(playlistId: String) {
         self.playlistId = playlistId
@@ -442,9 +438,14 @@ struct PlaylistDetailView: View {
             .miniPlayerTracksScroll()
             .onScrollGeometryChange(
                 for: CGFloat.self,
-                of: { $0.contentOffset.y },
-                action: { _, newOffset in
-                    scrollOffset = newOffset
+                of: {
+                    let raw = min(max(($0.contentOffset.y - Self.barFadeStart) / Self.barFadeDistance, 0), 1)
+                    return (raw * 40).rounded() / 40
+                },
+                action: { _, newProgress in
+                    if barProgress != newProgress {
+                        barProgress = newProgress
+                    }
                 }
             )
             .ignoresSafeArea(edges: .top)
@@ -583,13 +584,8 @@ struct PlaylistDetailView: View {
                             .font(.satoshi(size: 16, weight: .semibold))
                             .foregroundStyle(AudiaTheme.textPrimary)
                     }
-                    .frame(width: 36, height: 36)
-                    .background(.ultraThinMaterial, in: Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(AudiaTheme.surfaceBorder.opacity(0.8), lineWidth: 0.8)
-                    )
-                    .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+                    .frame(width: 40, height: 40)
+                    .audiaGlassCircle(isActive: false)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
                 }
@@ -608,13 +604,8 @@ struct PlaylistDetailView: View {
                     .font(.satoshi(size: 16, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
             }
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .overlay(
-                Circle()
-                    .stroke(AudiaTheme.surfaceBorder.opacity(0.8), lineWidth: 0.8)
-            )
-            .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+            .frame(width: 40, height: 40)
+            .audiaGlassCircle(isActive: false)
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
         })
@@ -854,7 +845,7 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private func songList(for playlist: PlaylistDetailInfo) -> some View {
-        ForEach(Array(playlist.songs.enumerated()), id: \.element.id) { index, song in
+        ForEach(Array(playlist.songs.enumerated()), id: \.offset) { index, song in
             SongRowView(song: song, onTap: { playSong(song, in: playlist) }, onNavigate: { pendingRoute = $0 })
             .contextMenu {
                 if isEditable {

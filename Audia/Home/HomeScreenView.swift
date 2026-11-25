@@ -29,8 +29,11 @@ struct HomeScreenView: View {
                     errorView(error)
                 } else {
                     homescreenContent
+                        .transition(.opacity)
                 }
             }
+            .animation(.easeOut(duration: 0.28), value: viewModel.isLoading)
+            .animation(.spring(response: 0.42, dampingFraction: 0.86), value: viewModel.selectedChip?.title)
             .frame(maxHeight: .infinity, alignment: .top)
             .audiaScreenBackground()
             .toolbar(.hidden, for: .navigationBar)
@@ -73,8 +76,7 @@ struct HomeScreenView: View {
                     )
                 }
 
-                ForEach(viewModel.homeSections.indices, id: \.self) { index in
-                    let section = viewModel.homeSections[index]
+                ForEach(viewModel.homeSections) { section in
                     sectionView(for: section)
                 }
 

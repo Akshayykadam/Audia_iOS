@@ -251,10 +251,7 @@ final class HomeViewModel {
 
     private func mergeSections() {
         let isHome = isHomeChipActive
-        let localSections = isHome ? cachedLocalSections : cachedLocalSections.filter {
-            if case .keepListening = $0 { return false }
-            return true
-        }
+        let localSections = isHome ? cachedLocalSections : []
         let serverSections = homePage?.sections.enumerated().map { mapServerSection($1, index: $0) } ?? []
         let all = localSections + serverSections + (isHome ? cachedPhase2Sections : [])
         let merged = orderSections(all)
@@ -272,24 +269,26 @@ final class HomeViewModel {
     private func orderSections(_ sections: [HomeSection]) -> [HomeSection] {
         let filtered = sections.compactMap { section -> HomeSection? in
             let title = section.displayTitle.lowercased()
-            // Ignore generic unauthenticated server "Quick picks" shelves so they never overwrite or duplicate local personalization
-            if case .homePageSection = section, (title == "quick picks" || title.contains("quick pick")) {
-                return nil
-            }
-            if title.contains("community playlist") || title.contains("from the community") || title.contains("trending community") {
-                return nil
-            }
-            if title.contains("trending songs") || title.contains("covers and remixes") {
-                return nil
-            }
-            if title.contains("song mix") || title.contains("song mixes") || title.contains("mixed for you") || title.contains("为你混配") {
-                return nil
-            }
-            if title.contains("forgotten") {
-                return nil
-            }
-            if case .fromTheCommunity = section {
-                return nil
+            if isHomeChipActive {
+                // Ignore generic unauthenticated server "Quick picks" shelves on Home so they never overwrite or duplicate local personalization
+                if case .homePageSection = section, (title == "quick picks" || title.contains("quick pick")) {
+                    return nil
+                }
+                if title.contains("community playlist") || title.contains("from the community") || title.contains("trending community") {
+                    return nil
+                }
+                if title.contains("trending songs") || title.contains("covers and remixes") {
+                    return nil
+                }
+                if title.contains("song mix") || title.contains("song mixes") || title.contains("mixed for you") || title.contains("为你混配") {
+                    return nil
+                }
+                if title.contains("forgotten") {
+                    return nil
+                }
+                if case .fromTheCommunity = section {
+                    return nil
+                }
             }
             if !isHomeChipActive {
                 if case .keepListening = section {
@@ -319,8 +318,8 @@ final class HomeViewModel {
             sectionWeight(a) > sectionWeight(b)
         }
 
-        // Always ensure Quick Picks is at the start and has a full grid of songs (at least 16 songs)
-        guard SettingsStore.shared.showQuickPicks else {
+        // Always ensure Quick Picks is at the start on Home and has a full grid of songs (at least 16 songs)
+        guard isHomeChipActive, SettingsStore.shared.showQuickPicks else {
             return ordered
         }
 

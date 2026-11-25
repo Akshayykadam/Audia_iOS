@@ -38,6 +38,7 @@ struct ContentView: View {
                         .opacity(selectedTab == 3 ? 1 : 0)
                         .allowsHitTesting(selectedTab == 3)
                 }
+                .animation(.easeOut(duration: 0.18), value: selectedTab)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AudiaTheme.background.ignoresSafeArea())
 
@@ -100,6 +101,7 @@ struct ContentView: View {
             }
         }
         .onReceive(AppRouter.shared.$playerExpandToken.dropFirst()) { _ in
+            guard nowPlaying.isBarPresented else { return }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                 isExpanded = true
             }
@@ -140,6 +142,7 @@ struct ContentView: View {
 struct AudiaSolidTabBar: View {
     @Binding var selectedTab: Int
     @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var tabNamespace
 
     var body: some View {
         HStack(spacing: 8) {
@@ -176,11 +179,14 @@ struct AudiaSolidTabBar: View {
                     Capsule(style: .continuous)
                         .fill(AudiaTheme.surfaceVariant)
                         .frame(width: 56, height: 40)
+                        .matchedGeometryEffect(id: "activeTabPill", in: tabNamespace)
                 }
 
                 Image(systemName: isSelected ? selectedIcon : icon)
                     .font(.system(size: 23, weight: isSelected ? .semibold : .medium))
                     .foregroundStyle(isSelected ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
+                    .contentTransition(.symbolEffect(.replace))
+                    .scaleEffect(isSelected ? 1.04 : 1.0)
             }
             .frame(width: 56, height: 46)
         }

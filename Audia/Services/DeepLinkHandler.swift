@@ -45,7 +45,9 @@ enum DeepLinkHandler {
                 return true
             }
         case "player":
-            AppRouter.shared.expandPlayer()
+            if NowPlaying.shared.isBarPresented {
+                AppRouter.shared.expandPlayer()
+            }
             return true
         case "play", "track":
             let videoId = components.queryItems?.first(where: { $0.name == "id" })?.value

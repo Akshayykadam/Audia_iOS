@@ -16,6 +16,7 @@ enum PlaybackQueue {
         let index = min(max(startIndex, 0), songs.count - 1)
         let first = songs[index]
         NowPlaying.shared.setQueue(songs, startIndex: index)
+        NowPlaying.shared.update(with: first)
         loggedTask(log, "\(context) failed") {
             try await PlaybackManager.shared.resolveAndPlay(videoId: first.videoId)
         }
@@ -43,6 +44,7 @@ enum PlaybackQueue {
         let isCurrentSong = NowPlaying.shared.videoId == song.videoId
         if !isCurrentSong {
             NowPlaying.shared.setQueue([song], startIndex: 0)
+            NowPlaying.shared.update(with: song)
             Task { try? await PlaybackManager.shared.resolveAndPlay(videoId: song.videoId) }
         }
         Task {
@@ -58,6 +60,7 @@ enum PlaybackQueue {
     /// Used by Home/Search/Explore tap-to-play.
     static func playSingleWithRadio(_ song: SongItem, log: AppLogger) {
         NowPlaying.shared.setQueue([song], startIndex: 0)
+        NowPlaying.shared.update(with: song)
         Task { @MainActor in
             do {
                 try await PlaybackManager.shared.resolveAndPlay(videoId: song.videoId)

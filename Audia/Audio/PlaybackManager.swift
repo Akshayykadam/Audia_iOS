@@ -97,6 +97,8 @@ actor PlaybackManager {
     }
 
     private func playNetworkResult(_ result: PlaybackResult, videoId: String) async {
+        let isStillCurrent = await MainActor.run { NowPlaying.shared.videoId == videoId }
+        guard isStillCurrent else { return }
         let queueSong = await queueSong(for: videoId)
         await PlayerController.shared.play(
             url: result.streamUrl,

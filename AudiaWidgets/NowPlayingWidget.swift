@@ -77,7 +77,7 @@ private struct NowPlayingSmallView: View {
     let renderingMode: WidgetRenderingMode
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .center, spacing: 6) {
             // Strictly 1:1 Square Album Artwork (Preserved Full Color in Accented/Liquid Glass)
             ZStack {
                 if let artwork = entry.artwork {
@@ -100,52 +100,23 @@ private struct NowPlayingSmallView: View {
                     .stroke(AudiaWidgetTheme.artworkBorder(for: colorScheme), lineWidth: 0.5)
             )
             .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 6, x: 0, y: 2)
+            .frame(maxWidth: .infinity, alignment: .center)
             .unredacted()
 
-            Spacer(minLength: 2)
+            // Metadata Row
+            VStack(alignment: .leading, spacing: 1) {
+                Text(entry.state.title.isEmpty ? "Not Playing" : entry.state.title)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
 
-            // Metadata and Tactile Play Button Row
-            HStack(alignment: .center, spacing: 6) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(entry.state.title.isEmpty ? "Not Playing" : entry.state.title)
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-
-                    Text(entry.state.artist.isEmpty ? "Audia" : entry.state.artist)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-
-                if #available(iOS 17.0, *) {
-                    Button(intent: TogglePlayPauseIntent()) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    renderingMode == .accented
-                                        ? Color.white.opacity(0.18)
-                                        : AudiaWidgetTheme.controlFillColor(for: colorScheme)
-                                )
-                                .frame(width: 28, height: 28)
-                                .shadow(color: renderingMode == .accented ? Color.clear : Color.black.opacity(colorScheme == .dark ? 0.45 : 0.16), radius: 3, x: 0, y: 1.5)
-                            Image(systemName: entry.state.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(
-                                    renderingMode == .accented
-                                        ? Color.white
-                                        : AudiaWidgetTheme.controlIconColor(for: colorScheme)
-                                )
-                                .offset(x: entry.state.isPlaying ? 0 : 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .unredacted()
-                }
+                Text(entry.state.artist.isEmpty ? "Audia" : entry.state.artist)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
+                    .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 2)
             .unredacted()
         }

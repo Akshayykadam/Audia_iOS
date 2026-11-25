@@ -47,6 +47,7 @@ struct AsyncImageView: View {
                 .aspectRatio(contentMode: contentMode)
                 .frame(width: size.width, height: size.height, alignment: .center)
                 .clipped()
+                .transition(.opacity)
         } else {
             placeholderView
         }

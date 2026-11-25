@@ -46,6 +46,49 @@ extension View {
     func appListBottomClearance(isRootTab: Bool = false) -> some View {
         modifier(AppListBottomClearanceModifier(isRootTab: isRootTab))
     }
+
+    /// Circular iOS 26 Liquid Glass treatment with an ultra-thin material fallback.
+    func audiaGlassCircle(isActive: Bool = false) -> some View {
+        modifier(AudiaGlassCircleModifier(isActive: isActive))
+    }
+}
+
+struct AudiaGlassCircleModifier: ViewModifier {
+    var isActive: Bool = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        let tintColor: Color = colorScheme == .dark
+            ? Color.white.opacity(0.28)
+            : Color.black.opacity(0.14)
+        if #available(iOS 26.0, *) {
+            content
+                .glassEffect(
+                    isActive
+                        ? .regular.tint(tintColor).interactive()
+                        : .regular.interactive(),
+                    in: .circle
+                )
+        } else {
+            let fill = colorScheme == .dark
+                ? Color.white.opacity(isActive ? 0.24 : 0.10)
+                : Color.black.opacity(isActive ? 0.14 : 0.06)
+            let stroke = colorScheme == .dark
+                ? Color.white.opacity(isActive ? 0.36 : 0.14)
+                : Color.black.opacity(isActive ? 0.22 : 0.10)
+            content
+                .background(
+                    Circle()
+                        .fill(fill)
+                        .background(.ultraThinMaterial, in: Circle())
+                )
+                .overlay(
+                    Circle()
+                        .stroke(stroke, lineWidth: 0.8)
+                )
+        }
+    }
 }
 
 /// Dynamic bottom clearance for scrollable views (ScrollView / LazyVStack), ensuring content

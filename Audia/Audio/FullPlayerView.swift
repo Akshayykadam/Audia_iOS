@@ -45,6 +45,10 @@ struct FullPlayerView: View {
         )
     }
     @State private var showQueue = false
+    @State private var showLyrics = false
+    @State private var showTranslation = false
+    @State private var isTranslating = false
+    @State private var hasLyrics = false
     @State private var pendingRoute: DetailRoute?
     @State private var showSongMenu = false
     @State private var showArtistPicker = false
@@ -59,6 +63,8 @@ struct FullPlayerView: View {
             ZStack {
                 AudiaTheme.background
                     .ignoresSafeArea()
+
+                lyricsAmbientBackground(size: geometry.size)
 
                 VStack(spacing: 0) {
                     if !settings.audioOnlyMode && np.isVideoMode && np.hasVideo {
@@ -79,6 +85,7 @@ struct FullPlayerView: View {
             .offset(y: collapseOffset)
             .animation(.spring(response: 0.35, dampingFraction: 0.85), value: collapseOffset)
             .animation(.easeInOut(duration: 0.35), value: showQueue)
+            .animation(.spring(response: 0.5, dampingFraction: 0.86), value: showLyrics)
             .simultaneousGesture(collapseDrag)
             .onChange(of: np.videoId) { _, _ in
                 np.isVideoMode = false
@@ -128,9 +135,10 @@ struct FullPlayerView: View {
                 onCollapse()
             }) {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
                     .foregroundStyle(AudiaTheme.textPrimary)
                     .frame(width: 44, height: 44)
+                    .audiaGlassCircle(isActive: false)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
 
@@ -142,49 +150,43 @@ struct FullPlayerView: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Button {
                     Haptics.light()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                        showQueue = true
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+                        showQueue = false
+                        showLyrics = true
                     }
                 } label: {
-                    Image(systemName: "list.bullet")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    Image(systemName: "quote.bubble")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
                         .foregroundStyle(AudiaTheme.textPrimary)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
+                        .audiaGlassCircle(isActive: false)
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+                .accessibilityLabel("Lyrics")
 
                 Button {
                     Haptics.light()
                     showSongMenu = true
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
                         .foregroundStyle(AudiaTheme.textPrimary)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
+                        .audiaGlassCircle(isActive: false)
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+                .accessibilityLabel("More options")
             }
         }
         .padding(.horizontal, 16)
-        .padding(.top, 4)
+        .padding(.top, 5)
     }
 
     private func queueContent(horizontalPadding: CGFloat) -> some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(AudiaTheme.textSecondary.opacity(0.3))
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-                .contentShape(Rectangle().size(width: 60, height: 30))
-                .onTapGesture {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                        showQueue = false
-                    }
-                }
             QueueView(
                 showQueue: $showQueue,
                 isShuffleOn: $np.isShuffleOn,
@@ -199,23 +201,62 @@ struct FullPlayerView: View {
 
     @ViewBuilder
     private func mainPlayerLayout(geometry: GeometryProxy, horizontalPadding: CGFloat, isCompact: Bool) -> some View {
-        topBar
+        let artSize = min(geometry.size.width - 56, isCompact ? 280 : 340)
+        let heroLayout = showLyrics
+            ? AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+            : AnyLayout(VStackLayout(alignment: .center, spacing: 12))
 
-        Spacer(minLength: 8)
+        if !showLyrics {
+            topBar
+                .transition(.opacity)
+        }
 
-        artwork
-            .frame(
-                width: min(geometry.size.width - 56, isCompact ? 280 : 340),
-                height: min(geometry.size.width - 56, isCompact ? 280 : 340)
+        heroLayout {
+            artwork
+                .frame(
+                    width: showLyrics ? 54 : artSize,
+                    height: showLyrics ? 54 : artSize
+                )
+                .clipShape(RoundedRectangle(cornerRadius: showLyrics ? 10 : 24, style: .continuous))
+                .shadow(
+                    color: Color.black.opacity(showLyrics ? 0.35 : (colorScheme == .dark ? 0.6 : 0.15)),
+                    radius: showLyrics ? 8 : 18,
+                    y: showLyrics ? 4 : 8
+                )
+                .frame(
+                    maxWidth: showLyrics ? nil : .infinity,
+                    maxHeight: showLyrics ? nil : .infinity,
+                    alignment: .center
+                )
+                .onTapGesture {
+                    if showLyrics {
+                        Haptics.light()
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
+                            showLyrics = false
+                        }
+                    }
+                }
+
+            titleAndActionsRow
+                .padding(.horizontal, showLyrics ? 0 : horizontalPadding)
+
+            if showLyrics {
+                lyricsHeaderButtons
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .padding(.horizontal, showLyrics ? 16 : 0)
+        .padding(.bottom, showLyrics ? 4 : (isCompact ? 12 : 20))
+
+        if showLyrics {
+            LyricsScrollSection(
+                showTranslation: $showTranslation,
+                isTranslating: $isTranslating,
+                hasLyrics: $hasLyrics
             )
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.6 : 0.15), radius: 18, y: 8)
-
-        Spacer(minLength: 16)
-
-        titleAndActionsRow
-            .padding(.horizontal, horizontalPadding)
-            .padding(.bottom, isCompact ? 8 : 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transition(.opacity)
+        }
 
         FullPlayerProgressSlider(horizontalPadding: horizontalPadding)
             .padding(.bottom, isCompact ? 8 : 16)
@@ -223,20 +264,114 @@ struct FullPlayerView: View {
         playbackControls(isCompact: isCompact)
     }
 
+    private var lyricsHeaderButtons: some View {
+        HStack(spacing: 8) {
+            Button {
+                Haptics.light()
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
+                    showLyrics = false
+                }
+            } label: {
+                Image(systemName: "quote.bubble.fill")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .audiaGlassCircle(isActive: true)
+            }
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+            .accessibilityLabel("Hide lyrics")
+
+            Button {
+                Haptics.toggle()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showTranslation.toggle()
+                }
+            } label: {
+                ZStack {
+                    if isTranslating {
+                        ProgressView()
+                            .tint(AudiaTheme.textPrimary)
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "translate")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
+                    }
+                }
+                .frame(width: 44, height: 44)
+                .audiaGlassCircle(isActive: showTranslation)
+            }
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+            .disabled(!hasLyrics)
+            .opacity(hasLyrics ? 1 : 0.4)
+            .accessibilityLabel("Translate lyrics")
+        }
+    }
+
+    private func lyricsAmbientBackground(size: CGSize) -> some View {
+        let isDark = colorScheme == .dark
+        return ZStack {
+            if let primary = np.dominantColors.first {
+                let secondary = np.dominantColors.count > 1 ? np.dominantColors[1] : primary
+                LinearGradient(
+                    colors: isDark
+                        ? [primary.opacity(0.75), secondary.opacity(0.45), Color.black.opacity(0.88)]
+                        : [primary.opacity(0.28), secondary.opacity(0.18), Color.white.opacity(0.92)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            } else {
+                AudiaTheme.background
+            }
+
+            if let uiImage = np.thumbnailUIImage {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size.width, height: size.height)
+                    .clipped()
+                    .saturation(isDark ? 1.45 : 1.15)
+                    .blur(radius: 85)
+                    .scaleEffect(1.3)
+                    .opacity(isDark ? 0.55 : 0.24)
+            }
+
+            LinearGradient(
+                stops: isDark
+                    ? [
+                        .init(color: Color.black.opacity(0.28), location: 0.0),
+                        .init(color: Color.black.opacity(0.15), location: 0.45),
+                        .init(color: Color.black.opacity(0.52), location: 1.0)
+                    ]
+                    : [
+                        .init(color: Color.white.opacity(0.55), location: 0.0),
+                        .init(color: Color.white.opacity(0.38), location: 0.45),
+                        .init(color: Color.white.opacity(0.65), location: 1.0)
+                    ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .animation(.easeInOut(duration: 0.65), value: np.videoId)
+    }
+
     private func playbackControls(isCompact: Bool) -> some View {
         PlaybackControlsRow(
             isPlaying: np.isPlaying,
             hasPrevious: np.hasPrevious,
             hasNext: np.hasNext,
-            isShuffle: np.isShuffleOn,
-            isLiked: isLiked,
+            playbackMode: np.playbackMode,
             onPrevious: { np.playPrevious() },
             onPlayPause: { player.togglePlayPause() },
             onNext: { np.playNext() },
-            onShuffle: { np.isShuffleOn.toggle() },
-            onLike: {
-                guard let song = currentSongItem else { return }
-                Task { await likeStore.toggle(song: song) }
+            onCyclePlaybackMode: { np.cyclePlaybackMode() },
+            onQueue: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                    showLyrics = false
+                    showQueue = true
+                }
             }
         )
         .scaleEffect(isCompact ? 0.94 : 1)
@@ -254,9 +389,11 @@ struct FullPlayerView: View {
                 guard settings.artworkSwipeNavigation else { return }
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 if value.translation.width < -60, np.hasNext {
+                    Haptics.trackChanged()
                     np.playNext()
                     slideInArtwork(fromLeft: false)
                 } else if value.translation.width > 60, np.hasPrevious {
+                    Haptics.trackChanged()
                     np.playPrevious()
                     slideInArtwork(fromLeft: true)
                 }
@@ -282,6 +419,7 @@ struct FullPlayerView: View {
                 defer { collapseOffset = 0 }
                 let isVertical = value.translation.height > abs(value.translation.width)
                 if isVertical, value.translation.height > 140 {
+                    Haptics.soft()
                     onCollapse()
                 }
             }
@@ -290,23 +428,44 @@ struct FullPlayerView: View {
     // MARK: - Player Content
 
     private var titleAndActionsRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(np.title)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundColor(AudiaTheme.textPrimary)
-                .lineLimit(1)
-
-            Button(action: handleArtistTap) {
-                Text(np.displayArtist)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundColor(AudiaTheme.textSecondary)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: showLyrics ? 2 : 4) {
+                Text(np.title)
+                    .font(.system(size: showLyrics ? 17.5 : 22, weight: .bold, design: .rounded))
+                    .foregroundColor(AudiaTheme.textPrimary)
                     .lineLimit(1)
-                    .contentShape(Rectangle())
+                    .truncationMode(.tail)
+
+                Button(action: handleArtistTap) {
+                    Text(np.displayArtist)
+                        .font(.system(size: showLyrics ? 14.5 : 15, weight: .medium, design: .rounded))
+                        .foregroundColor(AudiaTheme.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(ArtistTapButtonStyle())
+                .disabled(isResolvingArtist || np.displayArtist.isEmpty)
             }
-            .buttonStyle(ArtistTapButtonStyle())
-            .disabled(isResolvingArtist || np.displayArtist.isEmpty)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+
+            if !showLyrics {
+                Button {
+                    Haptics.success()
+                    guard let song = currentSongItem else { return }
+                    Task { await likeStore.toggle(song: song) }
+                } label: {
+                    Image(systemName: isLiked ? "heart.fill" : "heart")
+                        .font(.satoshi(size: 22, weight: .medium))
+                        .foregroundStyle(isLiked ? AudiaTheme.primary : AudiaTheme.textSecondary)
+                        .contentTransition(.symbolEffect(.replace))
+                        .frame(width: 40, height: 40)
+                }
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.82))
+                .accessibilityLabel("Like")
+                .transition(.opacity.combined(with: .scale(scale: 0.85)))
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var musicVideoContent: some View {

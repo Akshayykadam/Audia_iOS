@@ -36,7 +36,13 @@ struct YouTubeGridItemView: View {
 
     var body: some View {
         Button(action: {
-            Haptics.light()
+            if case .song = item {
+                Haptics.playTrack()
+            } else if case .episode = item {
+                Haptics.playTrack()
+            } else {
+                Haptics.light()
+            }
             onTap()
         }) {
             VStack(alignment: .leading, spacing: 4) {

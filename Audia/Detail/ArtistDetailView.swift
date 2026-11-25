@@ -270,16 +270,12 @@ struct ArtistDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(SettingsStore.self) private var settings
 
-    @State private var scrollOffset: CGFloat = 0
+    @State private var barProgress: CGFloat = 0
     @State private var linkCopied = false
     @State private var linkResetTask: Task<Void, Never>?
 
     private static let barFadeStart: CGFloat = 80
     private static let barFadeDistance: CGFloat = 120
-
-    private var barProgress: CGFloat {
-        min(max((scrollOffset - Self.barFadeStart) / Self.barFadeDistance, 0), 1)
-    }
 
     init(browseId: String) {
         self.browseId = browseId
@@ -303,9 +299,14 @@ struct ArtistDetailView: View {
             .miniPlayerTracksScroll()
             .onScrollGeometryChange(
                 for: CGFloat.self,
-                of: { $0.contentOffset.y },
-                action: { _, newOffset in
-                    scrollOffset = newOffset
+                of: {
+                    let raw = min(max(($0.contentOffset.y - Self.barFadeStart) / Self.barFadeDistance, 0), 1)
+                    return (raw * 40).rounded() / 40
+                },
+                action: { _, newProgress in
+                    if barProgress != newProgress {
+                        barProgress = newProgress
+                    }
                 }
             )
             .ignoresSafeArea(edges: .top)
@@ -381,13 +382,8 @@ struct ArtistDetailView: View {
                     .font(.satoshi(size: 16, weight: .semibold))
                     .foregroundStyle(fadedColor == .primary ? AudiaTheme.textPrimary : fadedColor)
             }
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .overlay(
-                Circle()
-                    .stroke(AudiaTheme.surfaceBorder.opacity(0.8), lineWidth: 0.8)
-            )
-            .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+            .frame(width: 40, height: 40)
+            .audiaGlassCircle(isActive: false)
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
         })

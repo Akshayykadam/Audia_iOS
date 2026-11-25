@@ -28,10 +28,11 @@ struct MiniPlayerInlineOnScrollModifier: ViewModifier {
                 for: CGFloat.self,
                 of: { $0.contentOffset.y },
                 action: { oldOffset, newOffset in
-                    if newOffset > oldOffset, newOffset > compactThreshold {
+                    let delta = newOffset - oldOffset
+                    if delta > 3, newOffset > compactThreshold {
                         guard !scrollState.isInline else { return }
                         scrollState.isInline = true
-                    } else if newOffset < oldOffset {
+                    } else if delta < -3 {
                         guard scrollState.isInline else { return }
                         scrollState.isInline = false
                     }

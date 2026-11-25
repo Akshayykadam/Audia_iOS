@@ -236,7 +236,7 @@ struct SongRowView: View {
         .padding(.vertical, 8)
         .contentShape(Rectangle())
         .onTapGesture {
-            Haptics.light()
+            Haptics.playTrack()
             onTap()
         }
         .contextMenu {

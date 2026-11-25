@@ -186,7 +186,7 @@ struct MiniPlayerBarView: View {
 
     private var nextButton: some View {
         Button(action: {
-            Haptics.light()
+            Haptics.trackChanged()
             np.playNext()
         }) {
             Image(systemName: "forward.end.fill")
@@ -292,7 +292,7 @@ struct MiniPlayerBarView: View {
 
     private func commitSwipe(to direction: SwipeDirection, pageWidth: CGFloat) {
         isCommitting = true
-        Haptics.selection()
+        Haptics.trackChanged()
         let target: CGFloat = direction == .next ? -pageWidth : pageWidth
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             dragOffset = target

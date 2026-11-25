@@ -10,6 +10,34 @@ import Observation
 import Nuke
 import SwiftUI
 
+enum PlaybackMode: String, Codable, CaseIterable {
+    case off
+    case shuffle
+    case repeatAll
+    case repeatOne
+
+    var iconName: String {
+        switch self {
+        case .off, .shuffle: return "shuffle"
+        case .repeatAll: return "repeat"
+        case .repeatOne: return "repeat.1"
+        }
+    }
+
+    var isActive: Bool {
+        self != .off
+    }
+
+    var accessibilityLabel: String {
+        switch self {
+        case .off: return "Shuffle off"
+        case .shuffle: return "Shuffle on"
+        case .repeatAll: return "Repeat all"
+        case .repeatOne: return "Repeat one song"
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class NowPlaying {
@@ -46,8 +74,33 @@ final class NowPlaying {
     var queueSongs: [SongItem] = []
     var queueIndex = 0
 
-    var isShuffleOn = false
-    var isRepeatOn = false
+    var playbackMode: PlaybackMode = .off
+
+    var isShuffleOn: Bool {
+        get { playbackMode == .shuffle }
+        set {
+            if newValue {
+                if playbackMode != .shuffle {
+                    shuffleQueue()
+                }
+            } else if playbackMode == .shuffle {
+                disableShuffle()
+            }
+        }
+    }
+
+    var isRepeatOn: Bool {
+        get { playbackMode == .repeatOne }
+        set {
+            if newValue {
+                if playbackMode == .shuffle { disableShuffle() }
+                playbackMode = .repeatOne
+            } else if playbackMode == .repeatOne {
+                playbackMode = .off
+            }
+            persistQueueState()
+        }
+    }
 
     var hasVideo: Bool = false
     var isVideoMode: Bool = false
@@ -57,7 +110,7 @@ final class NowPlaying {
     private var originalQueue: [SongItem]?
 
     var hasNext: Bool {
-        queueIndex + 1 < queueSongs.count
+        queueIndex + 1 < queueSongs.count || (playbackMode == .repeatAll && !queueSongs.isEmpty)
     }
 
     var hasPrevious: Bool {
@@ -78,6 +131,7 @@ final class NowPlaying {
     private static let queueIndexKey = "nowPlaying.queueIndex"
     private static let shuffleKey = "nowPlaying.shuffle"
     private static let repeatKey = "nowPlaying.repeat"
+    private static let playbackModeKey = "nowPlaying.playbackMode"
 
     private init() {
         restoreQueueIfNeeded()
@@ -103,8 +157,16 @@ final class NowPlaying {
             storedIndex = 0
         }
         queueIndex = min(max(storedIndex, 0), songs.count - 1)
-        isShuffleOn = UserDefaults.standard.bool(forKey: Self.shuffleKey)
-        isRepeatOn = UserDefaults.standard.bool(forKey: Self.repeatKey)
+        if let rawMode = UserDefaults.standard.string(forKey: Self.playbackModeKey),
+           let mode = PlaybackMode(rawValue: rawMode) {
+            playbackMode = mode
+        } else if UserDefaults.standard.bool(forKey: Self.repeatKey) {
+            playbackMode = .repeatOne
+        } else if UserDefaults.standard.bool(forKey: Self.shuffleKey) {
+            playbackMode = .shuffle
+        } else {
+            playbackMode = .off
+        }
         queueIndex = max(0, queueIndex)
         if songs.indices.contains(queueIndex) {
             update(with: songs[queueIndex])
@@ -121,6 +183,7 @@ final class NowPlaying {
             UserDefaults.standard.removeObject(forKey: Self.queueIndexKey)
             UserDefaults.standard.removeObject(forKey: Self.shuffleKey)
             UserDefaults.standard.removeObject(forKey: Self.repeatKey)
+            UserDefaults.standard.removeObject(forKey: Self.playbackModeKey)
             return
         }
         if let data = try? JSONEncoder().encode(queueSongs) {
@@ -129,13 +192,16 @@ final class NowPlaying {
         UserDefaults.standard.set(queueIndex, forKey: Self.queueIndexKey)
         UserDefaults.standard.set(isShuffleOn, forKey: Self.shuffleKey)
         UserDefaults.standard.set(isRepeatOn, forKey: Self.repeatKey)
+        UserDefaults.standard.set(playbackMode.rawValue, forKey: Self.playbackModeKey)
     }
 
     func setQueue(_ songs: [SongItem], startIndex: Int) {
         queueSongs = songs
         queueIndex = min(max(startIndex, 0), max(songs.count - 1, 0))
         originalQueue = nil
-        isShuffleOn = false
+        if playbackMode == .shuffle {
+            playbackMode = .off
+        }
         persistQueueState()
     }
 
@@ -160,10 +226,29 @@ final class NowPlaying {
         return Array(rest.prefix(prefixLimit))
     }
 
+    /// Cycles the mode button: Off -> Shuffle -> Repeat All -> Repeat One -> Off.
+    func cyclePlaybackMode() {
+        switch playbackMode {
+        case .off:
+            shuffleQueue()
+        case .shuffle:
+            disableShuffle()
+            playbackMode = .repeatAll
+            persistQueueState()
+        case .repeatAll:
+            playbackMode = .repeatOne
+            persistQueueState()
+        case .repeatOne:
+            playbackMode = .off
+            persistQueueState()
+        }
+    }
+
     /// Shuffles upcoming songs, keeping the current one; tapping again re-shuffles.
     func shuffleQueue() {
         guard queueSongs.count > 1 else {
-            isShuffleOn = true
+            playbackMode = .shuffle
+            persistQueueState()
             return
         }
         if originalQueue == nil {
@@ -175,13 +260,16 @@ final class NowPlaying {
         rest.shuffle()
         queueSongs = prefix + [current] + rest
         queueIndex = prefix.count
-        isShuffleOn = true
+        playbackMode = .shuffle
         persistQueueState()
     }
 
     /// Restore the original (unshuffled) queue order.
     func disableShuffle() {
-        guard queueSongs.indices.contains(queueIndex) else { return }
+        guard queueSongs.indices.contains(queueIndex) else {
+            playbackMode = .off
+            return
+        }
         if let orig = originalQueue {
             let currentVideoId = queueSongs[queueIndex].videoId
             queueSongs = orig
@@ -191,7 +279,9 @@ final class NowPlaying {
             queueIndex = min(restored, max(orig.count - 1, 0))
         }
         originalQueue = nil
-        isShuffleOn = false
+        if playbackMode == .shuffle {
+            playbackMode = .off
+        }
         persistQueueState()
     }
 
@@ -204,17 +294,20 @@ final class NowPlaying {
 
     func repeatCurrent() {
         guard queueSongs.indices.contains(queueIndex) else { return }
-        playCurrentSong(logContext: "repeatCurrent") {
-            self.isRepeatOn = false
-        }
+        playCurrentSong(logContext: "repeatCurrent")
     }
 
     func playNext(automatic: Bool = false) {
         guard hasNext else { return }
         guard !isResolvingNext else { return }
         if !automatic { lastManualSkipTime = Date() }
-        queueIndex += 1
-        playCurrentSong(logContext: "playNext")
+        if queueIndex + 1 < queueSongs.count {
+            queueIndex += 1
+            playCurrentSong(logContext: "playNext")
+        } else if playbackMode == .repeatAll, !queueSongs.isEmpty {
+            queueIndex = 0
+            playCurrentSong(logContext: "repeatAll")
+        }
     }
 
     func playPrevious() {
@@ -354,7 +447,7 @@ final class NowPlaying {
            duration >= 600 || musicVideoType == "MUSIC_VIDEO_TYPE_PODCAST_EPISODE" {
             Task { await EpisodePlaybackStore.shared.markPlayed(videoId: finishedId) }
         }
-        if isRepeatOn {
+        if playbackMode == .repeatOne {
             repeatCurrent()
             return
         }
@@ -384,7 +477,9 @@ final class NowPlaying {
                 }
                 self.queueSongs = songs
                 self.queueIndex = 0
-                self.isShuffleOn = false
+                if self.playbackMode == .shuffle {
+                    self.playbackMode = .off
+                }
                 let first = songs[0]
                 update(with: first)
                 try await PlaybackManager.shared.resolveAndPlay(videoId: first.videoId)

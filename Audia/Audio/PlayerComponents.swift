@@ -13,6 +13,7 @@ struct ProgressBar: View {
     let isPlaying: Bool
     let onEditingChanged: (Bool) -> Void
     @State private var isDragging = false
+    @State private var lastHapticStep = -1
 
     var body: some View {
         GeometryReader { geo in
@@ -23,35 +24,45 @@ struct ProgressBar: View {
                 // Remaining track (unwatched)
                 Capsule()
                     .fill(AudiaTheme.surfaceElevated)
-                    .frame(height: isDragging ? 7 : 4.5)
+                    .frame(height: isDragging ? 11 : 7)
 
                 // Elapsed track (watched, marked)
                 Capsule()
                     .fill(AudiaTheme.primary)
-                    .frame(width: elapsedWidth, height: isDragging ? 7 : 4.5)
+                    .frame(width: elapsedWidth, height: isDragging ? 11 : 7)
             }
             .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isDragging)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        let loc = value.location.x
+                        let percent = max(0, min(1, loc / max(width, 1)))
+                        let step = Int(percent * 25)
                         if !isDragging {
                             isDragging = true
+                            lastHapticStep = step
                             Haptics.selection()
+                        } else if step != lastHapticStep {
+                            lastHapticStep = step
+                            if percent == 0 || percent == 1 {
+                                Haptics.soft()
+                            } else {
+                                Haptics.selection()
+                            }
                         }
                         onEditingChanged(true)
-                        let loc = value.location.x
-                        let percent = max(0, min(1, loc / width))
                         progress = Float(percent)
                     }
                     .onEnded { _ in
                         isDragging = false
-                        Haptics.light()
+                        lastHapticStep = -1
+                        Haptics.soft()
                         onEditingChanged(false)
                     }
             )
         }
-        .frame(height: 16)
+        .frame(height: 20)
     }
 }
 
@@ -87,31 +98,32 @@ struct PlaybackControlsRow: View {
     let isPlaying: Bool
     let hasPrevious: Bool
     let hasNext: Bool
-    var isShuffle: Bool = false
-    var isLiked: Bool = false
+    var playbackMode: PlaybackMode = .off
 
     let onPrevious: () -> Void
     let onPlayPause: () -> Void
     let onNext: () -> Void
-    var onShuffle: (() -> Void)? = nil
-    var onLike: (() -> Void)? = nil
+    var onCyclePlaybackMode: (() -> Void)? = nil
+    var onQueue: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 0) {
             Button(action: {
-                Haptics.light()
-                onShuffle?()
+                Haptics.toggle()
+                onCyclePlaybackMode?()
             }) {
-                Image(systemName: "shuffle")
+                Image(systemName: playbackMode.iconName)
                     .font(.satoshi(size: 19, weight: .semibold))
-                    .foregroundStyle(isShuffle ? AudiaTheme.primary : AudiaTheme.textSecondary)
+                    .foregroundStyle(playbackMode.isActive ? AudiaTheme.primary : AudiaTheme.textSecondary)
+                    .contentTransition(.symbolEffect(.replace))
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.85))
             .frame(maxWidth: .infinity)
+            .accessibilityLabel(playbackMode.accessibilityLabel)
 
             Button(action: {
-                Haptics.light()
+                Haptics.trackChanged()
                 onPrevious()
             }) {
                 Image(systemName: "backward.end.fill")
@@ -129,7 +141,7 @@ struct PlaybackControlsRow: View {
                 .frame(maxWidth: .infinity)
 
             Button(action: {
-                Haptics.light()
+                Haptics.trackChanged()
                 onNext()
             }) {
                 Image(systemName: "forward.end.fill")
@@ -144,18 +156,17 @@ struct PlaybackControlsRow: View {
             .accessibilityLabel("Next")
 
             Button(action: {
-                Haptics.success()
-                onLike?()
+                Haptics.light()
+                onQueue?()
             }) {
-                Image(systemName: isLiked ? "heart.fill" : "heart")
-                    .font(.satoshi(size: 21, weight: .medium))
-                    .foregroundStyle(isLiked ? AudiaTheme.primary : AudiaTheme.textSecondary)
-                    .contentTransition(.symbolEffect(.replace))
+                Image(systemName: "list.bullet")
+                    .font(.satoshi(size: 20, weight: .semibold))
+                    .foregroundStyle(AudiaTheme.textSecondary)
                     .frame(width: 44, height: 44)
             }
-            .buttonStyle(BouncyScaleButtonStyle(scale: 0.82))
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.85))
             .frame(maxWidth: .infinity)
-            .accessibilityLabel("Like")
+            .accessibilityLabel("Queue")
         }
         .padding(.horizontal, 16)
     }

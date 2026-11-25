@@ -9,6 +9,7 @@ import SwiftUI
 /// Replaces the duplicated chip rows in Home, Library and Search.
 struct FilterChipBar<Item, ID: Hashable>: View {
     @Environment(SettingsStore.self) private var settings
+    @Namespace private var chipNamespace
     let items: [Item]
     let id: KeyPath<Item, ID>
     let title: (Item) -> String
@@ -24,22 +25,28 @@ struct FilterChipBar<Item, ID: Hashable>: View {
                         if !selected {
                             Haptics.selection()
                         }
-                        onTap(item)
+                        withAnimation(.spring(response: 0.36, dampingFraction: 0.8)) {
+                            onTap(item)
+                        }
                     } label: {
                         Text(LocalizedStringKey(title(item)))
                             .font(.satoshi(size: 14.5, weight: selected ? .bold : .medium))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(selected
-                                        ? AudiaTheme.primary
-                                        : AudiaTheme.surfaceVariant)
-                            )
-                            .overlay(
-                                Capsule()
-                                    .strokeBorder(selected ? Color.clear : AudiaTheme.surfaceBorder, lineWidth: 1)
-                            )
+                            .background {
+                                if selected {
+                                    Capsule()
+                                        .fill(AudiaTheme.primary)
+                                        .matchedGeometryEffect(id: "selectedChipPill", in: chipNamespace)
+                                } else {
+                                    Capsule()
+                                        .fill(AudiaTheme.surfaceVariant)
+                                        .overlay(
+                                            Capsule()
+                                                .strokeBorder(AudiaTheme.surfaceBorder, lineWidth: 1)
+                                        )
+                                }
+                            }
                             .foregroundStyle(selected
                                 ? AudiaTheme.onPrimary
                                 : AudiaTheme.textPrimary)
