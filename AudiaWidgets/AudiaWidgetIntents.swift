@@ -17,7 +17,9 @@ public struct TogglePlayPauseIntent: AudioPlaybackIntent {
     public func perform() async throws -> some IntentResult {
         // Optimistically flip the isPlaying flag in shared storage for instant UI responsiveness
         var state = WidgetDataStore.shared.readPlaybackState()
+        state = state.state(at: Date())
         state.isPlaying.toggle()
+        state.updatedAt = Date()
         WidgetDataStore.shared.writePlaybackState(state)
 
         // Broadcast to main app via Darwin notification
@@ -38,6 +40,7 @@ public struct SkipNextIntent: AudioPlaybackIntent {
 
     public func perform() async throws -> some IntentResult {
         WidgetDataStore.postDarwinNotification(WidgetDataStore.notifySkipNext)
+        WidgetCenter.shared.reloadTimelines(ofKind: "AudiaNowPlayingWidget")
         return .result()
     }
 }
@@ -51,6 +54,7 @@ public struct SkipPreviousIntent: AudioPlaybackIntent {
 
     public func perform() async throws -> some IntentResult {
         WidgetDataStore.postDarwinNotification(WidgetDataStore.notifySkipPrevious)
+        WidgetCenter.shared.reloadTimelines(ofKind: "AudiaNowPlayingWidget")
         return .result()
     }
 }

@@ -9,11 +9,19 @@ import SwiftUI
 
 struct ShimmerFill: View {
     var radius: CGFloat = 8
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let baseColor = colorScheme == .dark
+            ? Color.white.opacity(0.08)
+            : Color.black.opacity(0.06)
+        let highlightColor = colorScheme == .dark
+            ? Color.white.opacity(0.16)
+            : Color.white.opacity(0.65)
+
         TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
             let sweep = (shimmerPhase(at: timeline.date) * 2 - 1)
-            Color(.systemGray5)
+            baseColor
                 .overlay(
                     GeometryReader { geo in
                         let w = max(geo.size.width, 1)
@@ -21,7 +29,7 @@ struct ShimmerFill: View {
                         LinearGradient(
                             stops: [
                                 .init(color: .clear, location: 0),
-                                .init(color: .white.opacity(0.5), location: 0.5),
+                                .init(color: highlightColor, location: 0.5),
                                 .init(color: .clear, location: 1)
                             ],
                             startPoint: .leading,
@@ -131,6 +139,7 @@ struct ShimmerLoadingView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                Color.clear.frame(height: 62)
                 chipsRow
                 ForEach(sections.indices, id: \.self) { index in
                     switch sections[index] {

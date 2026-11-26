@@ -5,6 +5,24 @@
 
 import SwiftUI
 
+struct SettingsIconLabel: View {
+    let title: String
+    let icon: String
+    var iconColor: Color = AudiaTheme.primary
+    var textColor: Color = AudiaTheme.textPrimary
+
+    var body: some View {
+        Label {
+            Text(LocalizedStringKey(title))
+                .foregroundStyle(textColor)
+        } icon: {
+            Image(systemName: icon)
+                .foregroundStyle(iconColor)
+        }
+        .font(.satoshi(size: 16, weight: .medium))
+    }
+}
+
 struct SettingsNavigationRow<Destination: View>: View {
     @Environment(SettingsStore.self) private var settings
     let title: String
@@ -21,10 +39,9 @@ struct SettingsNavigationRow<Destination: View>: View {
         NavigationLink {
             destination()
         } label: {
-            Label(LocalizedStringKey(title), systemImage: icon)
-                .font(.satoshi(size: 16, weight: .medium))
+            SettingsIconLabel(title: title, icon: icon)
         }
-        .tint(settings.accentColor)
+        .tint(AudiaTheme.primary)
     }
 }
 
@@ -43,11 +60,11 @@ struct SettingsToggleRow: View {
     var body: some View {
         Toggle(isOn: $isOn) {
             if let icon {
-                Label(LocalizedStringKey(title), systemImage: icon)
-                    .font(.satoshi(size: 16, weight: .medium))
+                SettingsIconLabel(title: title, icon: icon)
             } else {
                 Text(LocalizedStringKey(title))
                     .font(.satoshi(size: 16, weight: .medium))
+                    .foregroundStyle(AudiaTheme.textPrimary)
             }
         }
         .toggleStyle(.amoled)
@@ -75,16 +92,16 @@ struct SettingsPickerRow<T: SettingsOption>: View {
             }
         } label: {
             if let icon {
-                Label(LocalizedStringKey(title), systemImage: icon)
-                    .font(.satoshi(size: 16, weight: .medium))
+                SettingsIconLabel(title: title, icon: icon)
             } else {
                 Text(LocalizedStringKey(title))
                     .font(.satoshi(size: 16, weight: .medium))
+                    .foregroundStyle(AudiaTheme.textPrimary)
             }
         }
         .font(.satoshi(size: 16, weight: .medium))
         .id(settings.accentName)
-        .tint(settings.accentColor)
+        .tint(AudiaTheme.primary)
     }
 }
 
@@ -113,8 +130,7 @@ struct SettingsStepperRow: View {
     var body: some View {
         Stepper {
             if let icon {
-                Label(LocalizedStringKey(title), systemImage: icon)
-                    .font(.satoshi(size: 16, weight: .medium))
+                SettingsIconLabel(title: title, icon: icon)
                     .overlay(alignment: .trailing) {
                         Text(": \(format(value))")
                             .font(.satoshi(size: 15, weight: .regular))
@@ -123,6 +139,7 @@ struct SettingsStepperRow: View {
                 HStack(spacing: 0) {
                     Text(LocalizedStringKey(title))
                         .font(.satoshi(size: 16, weight: .medium))
+                        .foregroundStyle(AudiaTheme.textPrimary)
                     Text(": \(format(value))")
                         .font(.satoshi(size: 15, weight: .regular))
                 }
@@ -148,9 +165,7 @@ struct SettingsLinkRow: View {
 
     var body: some View {
         Link(destination: url) {
-            Label(LocalizedStringKey(title), systemImage: icon)
-                .font(.satoshi(size: 16, weight: .semibold))
-                .foregroundStyle(.tint)
+            SettingsIconLabel(title: title, icon: icon, textColor: AudiaTheme.primary)
         }
     }
 }

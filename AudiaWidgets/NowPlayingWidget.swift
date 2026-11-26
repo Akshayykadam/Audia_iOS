@@ -23,17 +23,33 @@ struct NowPlayingTimelineProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (NowPlayingEntry) -> Void) {
-        let state = WidgetDataStore.shared.readPlaybackState()
-        let artwork = WidgetDataStore.shared.loadArtwork(fileName: state.artworkFileName)
-        completion(NowPlayingEntry(date: Date(), state: state, artwork: artwork))
+        let now = Date()
+        let state = WidgetDataStore.shared.readPlaybackState().state(at: now)
+        let artwork = WidgetDataStore.shared.loadArtwork(fileName: state.artworkFileName, fallbackToCurrent: true)
+        completion(NowPlayingEntry(date: now, state: state, artwork: artwork))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NowPlayingEntry>) -> Void) {
-        let state = WidgetDataStore.shared.readPlaybackState()
-        let artwork = WidgetDataStore.shared.loadArtwork(fileName: state.artworkFileName)
-        let entry = NowPlayingEntry(date: Date(), state: state, artwork: artwork)
-        let nextUpdate = Date().addingTimeInterval(15)
-        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        let now = Date()
+        let baseState = WidgetDataStore.shared.readPlaybackState()
+        let artwork = WidgetDataStore.shared.loadArtwork(fileName: baseState.artworkFileName, fallbackToCurrent: true)
+
+        if baseState.isPlaying, baseState.duration > 0 {
+            var entries: [NowPlayingEntry] = []
+            for step in 0..<12 {
+                let entryDate = now.addingTimeInterval(TimeInterval(step * 10))
+                let steppedState = baseState.state(at: entryDate)
+                entries.append(NowPlayingEntry(date: entryDate, state: steppedState, artwork: artwork))
+                if steppedState.currentTime >= steppedState.duration {
+                    break
+                }
+            }
+            completion(Timeline(entries: entries, policy: .atEnd))
+        } else {
+            let entry = NowPlayingEntry(date: now, state: baseState, artwork: artwork)
+            let nextUpdate = now.addingTimeInterval(60 * 15)
+            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        }
     }
 }
 
@@ -52,6 +68,7 @@ struct NowPlayingWidgetView: View {
                 NowPlayingSmallView(entry: entry, colorScheme: colorScheme, renderingMode: renderingMode)
             case .systemMedium:
                 NowPlayingMediumView(entry: entry, colorScheme: colorScheme, renderingMode: renderingMode)
+                    .padding(16)
             case .accessoryInline:
                 NowPlayingInlineView(entry: entry)
             case .accessoryCircular:
@@ -69,7 +86,7 @@ struct NowPlayingWidgetView: View {
     }
 }
 
-// MARK: - Small Widget (Apple Music Hero Square)
+// MARK: - Small Widget (Full-Bleed Artwork + Adaptive Bottom Scrim)
 
 private struct NowPlayingSmallView: View {
     let entry: NowPlayingEntry
@@ -77,48 +94,95 @@ private struct NowPlayingSmallView: View {
     let renderingMode: WidgetRenderingMode
 
     var body: some View {
-        VStack(alignment: .center, spacing: 6) {
-            // Strictly 1:1 Square Album Artwork (Preserved Full Color in Accented/Liquid Glass)
-            ZStack {
-                if let artwork = entry.artwork {
-                    Image(uiImage: artwork)
-                        .resizable()
-                        .widgetAccentedRenderingMode(.fullColor)
-                        .aspectRatio(contentMode: .fill)
-                } else {
-                    AudiaWidgetTheme.placeholderGradient(for: colorScheme)
-                    Image(systemName: "music.note")
-                        .font(.system(size: 28, weight: .light))
-                        .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
-                        .unredacted()
+        if renderingMode == .accented {
+            // Clear / Tinted Mode: keep background clear glass, artwork crisp & full-color
+            VStack(alignment: .leading, spacing: 6) {
+                ZStack {
+                    if let artwork = entry.artwork {
+                        Image(uiImage: artwork)
+                            .resizable()
+                            .widgetAccentedRenderingMode(.fullColor)
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        AudiaWidgetTheme.placeholderGradient(for: colorScheme)
+                        Image(systemName: "music.note")
+                            .font(.system(size: 26, weight: .light))
+                            .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
+                    }
                 }
-            }
-            .aspectRatio(1.0, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AudiaWidgetTheme.artworkBorder(for: colorScheme), lineWidth: 0.5)
-            )
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 6, x: 0, y: 2)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .unredacted()
+                .aspectRatio(1.0, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .unredacted()
 
-            // Metadata Row
-            VStack(alignment: .leading, spacing: 1) {
-                Text(entry.state.title.isEmpty ? "Not Playing" : entry.state.title)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(entry.state.title.isEmpty ? "Not Playing" : entry.state.title)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
-                Text(entry.state.artist.isEmpty ? "Audia" : entry.state.artist)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
-                    .lineLimit(1)
+                    Text(entry.state.artist.isEmpty ? "Audia" : entry.state.artist)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
+                        .lineLimit(1)
+                }
+                .unredacted()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 2)
-            .unredacted()
+            .padding(14)
+        } else {
+            ZStack(alignment: .bottomLeading) {
+                if let artwork = entry.artwork {
+                    GeometryReader { geo in
+                        let scrimBase = AudiaWidgetTheme.backgroundColor(for: colorScheme)
+                        Image(uiImage: artwork)
+                            .resizable()
+                            .widgetAccentedRenderingMode(.fullColor)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
+                            .overlay(alignment: .bottom) {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0.0),
+                                        .init(color: scrimBase.opacity(0.55), location: 0.38),
+                                        .init(color: scrimBase.opacity(0.90), location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                .frame(height: geo.size.height * 0.62)
+                            }
+                    }
+                    .unredacted()
+                } else {
+                    VStack {
+                        Spacer()
+                        Image(systemName: "music.note")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .unredacted()
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.state.title.isEmpty ? "Not Playing" : entry.state.title)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    Text(entry.state.artist.isEmpty ? "Audia" : entry.state.artist)
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(AudiaWidgetTheme.secondaryTextColor(for: colorScheme))
+                        .lineLimit(1)
+                }
+                .padding(14)
+                .unredacted()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
@@ -212,6 +276,7 @@ private struct NowPlayingMediumView: View {
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
                                 .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
 
@@ -246,6 +311,7 @@ private struct NowPlayingMediumView: View {
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(AudiaWidgetTheme.primaryTextColor(for: colorScheme))
                                 .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
 
@@ -335,6 +401,7 @@ public struct AudiaNowPlayingWidget: Widget {
         .configurationDisplayName("Now Playing")
         .description("View and interactively control what is currently playing.")
         .containerBackgroundRemovable(false)
+        .contentMarginsDisabled()
         .supportedFamilies([
             .systemSmall,
             .systemMedium,
@@ -360,6 +427,8 @@ public struct AudiaNowPlayingLiveActivity: Widget {
         ActivityConfiguration(for: AudiaNowPlayingAttributes.self) { context in
             // Lock Screen / Notification Banner presentation
             NowPlayingLiveActivityLockScreenView(state: context.state)
+                .activityBackgroundTint(Color.black.opacity(0.75))
+                .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 // Expanded Leading: Album Artwork (52x52 with 12pt corner radius)
@@ -540,7 +609,7 @@ struct NowPlayingLiveActivityArtworkView: View {
                     .resizable()
                     .preserveAccentedFullColor()
                     .aspectRatio(contentMode: .fill)
-            } else if let fileName, let img = WidgetDataStore.shared.loadArtwork(fileName: fileName) {
+            } else if let fileName, let img = WidgetDataStore.shared.loadArtwork(fileName: fileName, fallbackToCurrent: true) {
                 Image(uiImage: img)
                     .resizable()
                     .preserveAccentedFullColor()
@@ -597,6 +666,7 @@ struct NowPlayingLiveActivityLockScreenView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
 
@@ -618,13 +688,13 @@ struct NowPlayingLiveActivityLockScreenView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
         .padding(14)
-        .background(Color.black)
     }
 }
 #endif

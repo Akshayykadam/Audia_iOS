@@ -257,6 +257,7 @@ private struct ExploreSkeletonView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 2) {
+                Color.clear.frame(height: 62)
                 VStack(alignment: .leading, spacing: 0) {
                     ShimmerSectionTitle(width: 220)
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -309,6 +310,7 @@ private struct MoodDetailSkeletonView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 2) {
+                Color.clear.frame(height: 62)
                 VStack(alignment: .leading, spacing: 0) {
                     ShimmerSectionTitle(width: 80)
                     VStack(spacing: 0) {

@@ -240,6 +240,7 @@ extension PlayerController {
             let result = mpv_set_property(mpv, "time-pos", MPV_FORMAT_DOUBLE, &val)
             if result < 0 { Log.player.error("seek failed: mpv error \(result)") }
         }
+        WidgetBridge.shared.syncPlayback(from: NowPlaying.shared)
     }
 
     func setPaused(_ paused: Bool) {

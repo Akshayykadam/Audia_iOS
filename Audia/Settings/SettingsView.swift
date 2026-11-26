@@ -20,28 +20,49 @@ struct SettingsView: View {
     }
 
     private var customTopBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Button(action: {
+                Haptics.light()
                 dismiss()
                 AppRouter.shared.popActiveRoute()
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.satoshi(size: 17, weight: .semibold))
+                    .font(.satoshi(size: 16, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 36, height: 36)
-                    .background(AudiaTheme.surfaceVariant, in: Circle())
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
+                    .audiaGlassCircle()
             }
-            .buttonStyle(.plain)
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
             .accessibilityLabel("Back")
 
             Text("Settings")
-                .font(.satoshi(size: 26, weight: .bold))
+                .font(.satoshi(size: 20, weight: .bold))
                 .foregroundStyle(AudiaTheme.textPrimary)
+                .lineLimit(1)
+                .padding(.horizontal, 16)
+                .frame(height: 40)
+                .audiaGlassCapsule(isInteractive: false)
 
             Spacer()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .background(alignment: .top) {
+            LinearGradient(
+                stops: [
+                    .init(color: AudiaTheme.background, location: 0.0),
+                    .init(color: AudiaTheme.background.opacity(0.92), location: 0.48),
+                    .init(color: AudiaTheme.background.opacity(0.55), location: 0.78),
+                    .init(color: AudiaTheme.background.opacity(0), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 135)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
+        }
     }
 
     private func sectionHeader(_ text: String) -> some View {
@@ -60,9 +81,7 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var settings = settings
 
-        VStack(spacing: 0) {
-            customTopBar
-
+        ZStack(alignment: .top) {
             ScrollViewReader { proxy in
                 List {
                 Section {
@@ -148,8 +167,7 @@ struct SettingsView: View {
 
                 Section {
                     HStack {
-                        Label("Offline Storage", systemImage: "internaldrive")
-                            .font(.satoshi(size: 16, weight: .medium))
+                        SettingsIconLabel(title: "Offline Storage", icon: "internaldrive")
                         Spacer()
                         Text(trackCount > 0 ? "\(storageLabel) (\(trackCount))" : storageLabel)
                             .font(.satoshi(size: 15, weight: .regular))
@@ -164,9 +182,13 @@ struct SettingsView: View {
                         showCleanupConfirmation = true
                     }) {
                         HStack {
-                            Label("Cleanup Downloads", systemImage: "trash")
-                                .font(.satoshi(size: 16, weight: .medium))
-                                .foregroundStyle(trackCount > 0 || storageBytes > 0 ? AudiaTheme.textPrimary : AudiaTheme.textMuted)
+                            let hasDownloads = trackCount > 0 || storageBytes > 0
+                            SettingsIconLabel(
+                                title: "Cleanup Downloads",
+                                icon: "trash",
+                                iconColor: hasDownloads ? AudiaTheme.primary : AudiaTheme.textMuted,
+                                textColor: hasDownloads ? AudiaTheme.textPrimary : AudiaTheme.textMuted
+                            )
                             Spacer()
                             if isCleaningUp {
                                 ProgressView()
@@ -183,6 +205,7 @@ struct SettingsView: View {
                 .id("downloads")
             }
             .scrollContentBackground(.hidden)
+            .contentMargins(.top, 56, for: .scrollContent)
             .appListBottomClearance()
             .onAppear {
                 if AppRouter.shared.settingsTargetSection == "downloads" {
@@ -191,6 +214,8 @@ struct SettingsView: View {
                 }
             }
         }
+
+        customTopBar
         }
         .audiaScreenBackground()
         .tint(AudiaTheme.primary)

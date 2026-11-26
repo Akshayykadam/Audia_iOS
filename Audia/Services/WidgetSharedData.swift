@@ -37,6 +37,15 @@ public struct WidgetPlaybackState: Codable, Sendable, Equatable {
         max(0, duration - currentTime)
     }
 
+    public func state(at date: Date) -> WidgetPlaybackState {
+        guard isPlaying, duration > 0 else { return self }
+        let elapsed = max(0, date.timeIntervalSince(updatedAt))
+        var copy = self
+        copy.currentTime = min(duration, currentTime + elapsed)
+        copy.updatedAt = date
+        return copy
+    }
+
     public init(
         videoId: String = "",
         title: String = "",
@@ -112,9 +121,9 @@ public struct WidgetRecentItem: Codable, Identifiable, Sendable, Equatable {
 // MARK: - Apple-Grade Monochrome Adaptive Theme
 
 public enum AudiaWidgetTheme {
-    /// Pure Black in Dark Mode (#000000 OLED), Pure White in Light Mode (#FFFFFF)
+    /// Dark charcoal grey (#1C1C1E) in Dark Mode (like Apple Music widgets), Pure White (#FFFFFF) in Light Mode
     public static func backgroundColor(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color.black : Color.white
+        scheme == .dark ? Color(red: 28/255, green: 28/255, blue: 30/255) : Color.white
     }
 
     /// Background for cards/tiles within the widget
@@ -471,7 +480,7 @@ public final class WidgetDataStore {
         return nil
     }
 
-    public func loadArtwork(fileName: String?) -> UIImage? {
+    public func loadArtwork(fileName: String?, fallbackToCurrent: Bool = false) -> UIImage? {
         // 1. Check primary fileURL
         if let fileName, !fileName.isEmpty {
             let fileURL = artworkDirectory.appendingPathComponent(fileName)
@@ -501,8 +510,9 @@ public final class WidgetDataStore {
             }
         }
 
-        // 4. Try current artwork key from Keychain
-        if let data = WidgetKeychainStore.load(key: "audia_art_current"),
+        // 4. Optional fallback to current artwork key from Keychain (NowPlaying only)
+        if fallbackToCurrent,
+           let data = WidgetKeychainStore.load(key: "audia_art_current"),
            let img = UIImage(data: data) {
             return img
         }
