@@ -16,16 +16,20 @@ No unnecessary clutter. No annoying ads. Just you and your music.
 A little preview of what your music experience looks like.
 
 <p align="center">
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.39.30%E2%80%AFPM.png" width="24%" />
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.39.51%E2%80%AFPM.png" width="24%" />
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.39.58%E2%80%AFPM.png" width="24%" />
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.04%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/screenshot-01.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-02.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-03.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-04.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-05.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-06.png" width="16%" />
 </p>
 <p align="center">
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.21%E2%80%AFPM.png" width="24%" />
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.31%E2%80%AFPM.png" width="24%" />
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.40.40%E2%80%AFPM.png" width="24%" />
-  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2011-24-2026%20at%201.41.06%E2%80%AFPM.png" width="24%" />
+  <img src="App%20UI%20Screenshots/screenshot-07.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-08.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-09.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-10.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-11.png" width="16%" />
+  <img src="App%20UI%20Screenshots/screenshot-12.png" width="16%" />
 </p>
 
 ---
@@ -40,12 +44,13 @@ Your music deserves more than basic playback controls.
 
 - **Ad-Free Streaming** — Enjoy music and videos without commercial interruptions.
 - **MPVKit Audio Engine** — Powered by libmpv for reliable, low-latency playback.
-- **Background Playback** — Keep the music going with full Lock Screen and Control Center integration.
-- **10-Band Equalizer** — Shape your sound with ±12 dB controls and 15 built-in presets.
+- **Background Playback** — Keep the music going with full Lock Screen, Control Center, Live Activity, and Dynamic Island integration.
+- **Synchronized Lyrics & Translation** — Apple Music-style in-place lyrics with tap-to-seek, live translation toggle (persisted across sessions), and an adaptive ambient artwork background.
+- **10-Band Equalizer** — Shape your sound with ±12 dB controls and 15 built-in presets inside a Liquid Glass sheet.
 - **Audio Normalization** — Consistent volume using EBU R128 loudness normalization.
 - **Gapless Playback** — Move between tracks without missing a beat.
 - **In-App Volume Control** — Adjust volume right from the player.
-- **Artwork Gestures** — Swipe album artwork to skip tracks.
+- **Artwork & Player Gestures** — Swipe album artwork to skip tracks, drag down anywhere to smoothly minimize the player, and feel tactile haptics on playback controls and scrubbing.
 
 ### Music Is Better When You Can See It
 
@@ -71,15 +76,16 @@ Just paste a playlist link. Let Audia do the matching.
 
 Keep your listening experience exactly how you like it.
 
-- **Persistent Queue** — Your queue, shuffle, and repeat preferences are saved automatically.
+- **Persistent Queue** — Your queue, shuffle, repeat all, and repeat one preferences are saved automatically.
 - **Autoplay** — Discover similar tracks when your queue runs out.
-- **Queue Management** — Reorder, add, or remove upcoming tracks with ease.
+- **Queue Management** — Reorder, add, clear, or remove upcoming tracks with ease.
 
 ### Your Music Goes Offline
 
 Internet connection? Optional.
 
-- **Offline Playback** — Download music and podcasts for listening anywhere.
+- **Offline Playback** — Download individual tracks, full playlists in one tap, and podcast episodes for listening anywhere.
+- **Live Progress & Cancel** — Track per-song and playlist-wide download progress with instant stop/cancel controls.
 - **Automatic Downloads** — Automatically download liked songs and new podcast episodes.
 - **Wi-Fi Only Downloads** — Avoid unwanted mobile data usage.
 - **Storage Management** — Monitor and manage downloaded content from Settings.
@@ -106,11 +112,11 @@ There's always something new to discover.
 
 Because the little details matter.
 
-- **Minimal Dark Interface** — Pure black backgrounds and distraction-free layouts.
+- **iOS 26 Liquid Glass Design** — Floating Liquid Glass headers, capsule tab bar, mini-player, and translucent sheets tailored for both **Light** and **Dark** Mode.
+- **Home & Lock Screen Widgets** — Interactive **Now Playing** (Small full-bleed & Medium with Play/Pause/Skip and live scrubber) and **Recently Played** (Small, Medium, Large) widgets supporting Default, Dark, Clear, and Tinted Home Screen styles.
+- **Safari & Share Sheet Extensions** — Open YouTube and YouTube Music links directly in Audia from Safari or the iOS Share Sheet.
 - **Satoshi Typography** — Modern, clean typography throughout the app.
-- **Floating Navigation** — Smooth capsule-style tabs with a responsive mini-player.
-- **14 Accent Themes** — Give Audia your own visual identity.
-- **Player Backgrounds** — Choose artwork-based glow effects or a clean, solid dark background.
+- **Player Backgrounds** — Choose artwork-based ambient glow effects or a clean, solid background.
 - **Regional Controls** — Choose from 14 content regions and manage explicit content filtering.
 
 ### Your Privacy Matters
@@ -158,8 +164,8 @@ Want to explore the code, customize Audia, or build your own version? You're wel
 
 ### Requirements
 
-- macOS with **Xcode 16.0 or later**
-- iOS 16.0+ deployment target
+- macOS with **Xcode 26.0 or later**
+- **iOS 26.2+** deployment target
 - Xcode Command Line Tools
 
 Install the command line tools if you haven't already:
