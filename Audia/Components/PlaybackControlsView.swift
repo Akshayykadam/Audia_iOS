@@ -16,36 +16,48 @@ struct PlaybackControlsView: View {
     var onPlay: () -> Void
     var onShuffle: () -> Void = {}
     var onMore: () -> Void = {}
+    var secondaryActions: AnyView? = nil
     var moreCustomView: AnyView? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
-            Button(action: onPlay) {
+        HStack(spacing: 10) {
+            Button {
+                Haptics.light()
+                onPlay()
+            } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "play.fill")
                         .font(.satoshi(size: 14, weight: .bold))
                     Text("Play")
                         .font(.satoshi(size: 15, weight: .bold))
                 }
-                .foregroundStyle(AudiaTheme.onPrimary)
+                .foregroundStyle(AudiaTheme.textPrimary)
                 .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Capsule().fill(AudiaTheme.primary))
+                .frame(height: 40)
+                .contentShape(Capsule())
+                .audiaGlassCapsule()
             }
-            .buttonStyle(.plain)
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.94))
             .accessibilityLabel("Play all")
 
             if showsShuffle {
-                Button(action: onShuffle) {
+                Button {
+                    Haptics.light()
+                    onShuffle()
+                } label: {
                     Image(systemName: "shuffle")
                         .font(.satoshi(size: 16, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.textSecondary)
+                        .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(AudiaTheme.surfaceVariant))
-                        .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+                        .contentShape(Circle())
+                        .audiaGlassCircle()
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
                 .accessibilityLabel("Shuffle")
+            }
+
+            if let secondaryActions {
+                secondaryActions
             }
 
             Spacer()
@@ -53,15 +65,18 @@ struct PlaybackControlsView: View {
             if let moreCustomView {
                 moreCustomView
             } else if showsMore {
-                Button(action: onMore) {
+                Button {
+                    Haptics.light()
+                    onMore()
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.satoshi(size: 17, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.textSecondary)
+                        .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(AudiaTheme.surfaceVariant))
-                        .overlay(Circle().stroke(AudiaTheme.surfaceBorder, lineWidth: 1))
+                        .contentShape(Circle())
+                        .audiaGlassCircle()
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
                 .accessibilityLabel("More options")
             }
         }

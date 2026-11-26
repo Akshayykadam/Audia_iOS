@@ -512,6 +512,15 @@ extension DownloadManager {
         return false
     }
 
+    func cancel(videoId: String) {
+        cancelledDownloadIds.insert(videoId)
+        activeFFmpegSessions.removeValue(forKey: videoId)?.cancel()
+        if case .downloading = downloads[videoId] {
+            downloads[videoId] = .notStarted
+        }
+        lastReportedProgress.removeValue(forKey: videoId)
+    }
+
     private func cancelAllActiveDownloads() {
         for (videoId, state) in downloads {
             if case .downloading = state {

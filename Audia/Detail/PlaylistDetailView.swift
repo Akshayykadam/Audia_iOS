@@ -669,7 +669,10 @@ struct PlaylistDetailView: View {
                 PlaybackControlsView(
                     horizontalPadding: 0,
                     onPlay: { playAll(playlist) },
-                    onShuffle: { shufflePlay(playlist) }
+                    onShuffle: { shufflePlay(playlist) },
+                    secondaryActions: playlist.songs.isEmpty
+                        ? nil
+                        : AnyView(PlaylistDownloadAllButton(songs: playlist.songs))
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -856,7 +859,12 @@ struct PlaylistDetailView: View {
     @ViewBuilder
     private func songList(for playlist: PlaylistDetailInfo) -> some View {
         ForEach(Array(playlist.songs.enumerated()), id: \.offset) { index, song in
-            SongRowView(song: song, onTap: { playSong(song, in: playlist) }, onNavigate: { pendingRoute = $0 })
+            SongRowView(
+                song: song,
+                showDownloadButton: true,
+                onTap: { playSong(song, in: playlist) },
+                onNavigate: { pendingRoute = $0 }
+            )
             .contextMenu {
                 if isEditable {
                     Button(role: .destructive) {
@@ -1026,5 +1034,99 @@ struct AddSongToPlaylistView: View {
             Log.addSong.error("Failed to add song: \(error)")
         }
         addingIds.remove(song.id)
+    }
+}
+
+/// Liquid Glass download-all button for playlist headers with aggregate progress ring.
+private struct PlaylistDownloadAllButton: View {
+    let songs: [SongItem]
+    @ObservedObject private var downloadManager = DownloadManager.shared
+    @State private var isBatchDownloading = false
+    @State private var downloadTask: Task<Void, Never>?
+
+    private var stats: (downloaded: Int, downloading: Bool, progress: Double) {
+        guard !songs.isEmpty else { return (0, false, 0) }
+        var downloaded = 0
+        var active = false
+        var totalProgress = 0.0
+
+        for song in songs {
+            switch downloadManager.state(for: song.videoId) {
+            case .completed:
+                downloaded += 1
+                totalProgress += 1.0
+            case .downloading(let fraction):
+                active = true
+                totalProgress += min(max(fraction, 0), 1)
+            case .notStarted, .failed:
+                break
+            }
+        }
+        return (downloaded, active || isBatchDownloading, totalProgress / Double(songs.count))
+    }
+
+    var body: some View {
+        let s = stats
+        let allDownloaded = !songs.isEmpty && s.downloaded == songs.count
+
+        Button {
+            Haptics.light()
+            if s.downloading {
+                downloadTask?.cancel()
+                downloadTask = nil
+                isBatchDownloading = false
+                for song in songs {
+                    if case .downloading = downloadManager.state(for: song.videoId) {
+                        downloadManager.cancel(videoId: song.videoId)
+                    }
+                }
+                return
+            }
+            guard !allDownloaded else { return }
+            isBatchDownloading = true
+            let targets = songs
+            downloadTask = Task {
+                for song in targets {
+                    if Task.isCancelled { break }
+                    if !downloadManager.isDownloaded(videoId: song.videoId) {
+                        await downloadManager.download(song: song)
+                    }
+                }
+                await MainActor.run {
+                    isBatchDownloading = false
+                    downloadTask = nil
+                }
+            }
+        } label: {
+            ZStack {
+                if allDownloaded {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.satoshi(size: 17, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.primary)
+                } else if s.downloading {
+                    Circle()
+                        .stroke(Color.primary.opacity(0.16), lineWidth: 2.5)
+                        .padding(3)
+                    Circle()
+                        .trim(from: 0, to: CGFloat(min(max(s.progress, 0.03), 1)))
+                        .stroke(AudiaTheme.primary, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .padding(3)
+                        .animation(.easeOut(duration: 0.25), value: s.progress)
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                } else {
+                    Image(systemName: "arrow.down")
+                        .font(.satoshi(size: 16, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                }
+            }
+            .frame(width: 40, height: 40)
+            .contentShape(Circle())
+            .audiaGlassCircle()
+        }
+        .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
+        .accessibilityLabel(s.downloading ? "Stop downloading" : (allDownloaded ? "Playlist downloaded" : "Download all songs"))
     }
 }

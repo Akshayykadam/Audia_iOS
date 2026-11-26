@@ -183,6 +183,7 @@ struct SongRowView: View {
     let song: SongItem
     var artSize: CGFloat = 54
     var artRadius: CGFloat = 12
+    var showDownloadButton: Bool = false
     var onTap: () -> Void
     var onNavigate: ((DetailRoute) -> Void)?
 
@@ -209,6 +210,10 @@ struct SongRowView: View {
             }
 
             Spacer()
+
+            if showDownloadButton {
+                SongDownloadButton(song: song)
+            }
 
             Menu {
                 SongMenuActionsView(
@@ -282,5 +287,57 @@ struct DownloadCellProgressView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: state)
+    }
+}
+
+/// Compact per-row download button showing download / live progress ring / downloaded icon.
+struct SongDownloadButton: View {
+    let song: SongItem
+    @ObservedObject private var downloadManager = DownloadManager.shared
+
+    var body: some View {
+        let state = downloadManager.state(for: song.videoId)
+        Button {
+            Haptics.light()
+            switch state {
+            case .notStarted, .failed:
+                Task { await downloadManager.download(song: song) }
+            case .downloading:
+                downloadManager.cancel(videoId: song.videoId)
+            case .completed:
+                break
+            }
+        } label: {
+            ZStack {
+                switch state {
+                case .completed:
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.satoshi(size: 18, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.primary)
+                case .downloading(let fraction):
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.18), lineWidth: 2.2)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(min(max(fraction, 0.05), 1)))
+                            .stroke(AudiaTheme.primary, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeOut(duration: 0.2), value: fraction)
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(AudiaTheme.primary)
+                    }
+                    .frame(width: 20, height: 20)
+                case .notStarted, .failed:
+                    Image(systemName: "arrow.down.circle")
+                        .font(.satoshi(size: 18, weight: .medium))
+                        .foregroundStyle(AudiaTheme.textSecondary)
+                }
+            }
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(state == .completed ? "Downloaded" : "Download")
     }
 }

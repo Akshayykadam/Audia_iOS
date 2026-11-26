@@ -82,14 +82,17 @@ struct FullPlayerView: View {
                 .padding(.top, geometry.safeAreaInsets.top)
                 .padding(.bottom, geometry.safeAreaInsets.bottom)
             }
-            .ignoresSafeArea()
+            .frame(
+                width: geometry.size.width,
+                height: geometry.size.height + geometry.safeAreaInsets.top + geometry.safeAreaInsets.bottom
+            )
             .clipShape(RoundedRectangle(cornerRadius: dragCornerRadius, style: .continuous))
             .onAppear {
                 if CommandLine.arguments.contains("-openQueue") {
                     showQueue = true
                 }
             }
-            .offset(y: collapseOffset)
+            .offset(y: -geometry.safeAreaInsets.top + collapseOffset)
             .animation(.easeInOut(duration: 0.35), value: showQueue)
             .animation(.spring(response: 0.5, dampingFraction: 0.86), value: showLyrics)
             .simultaneousGesture(collapseDrag)
