@@ -34,7 +34,7 @@ struct EqualizerView: View {
                 .font(.satoshi(size: 17, weight: .bold))
                 .foregroundStyle(AudiaTheme.textPrimary)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .frame(height: 40)
                 .audiaGlassCapsule(isInteractive: false)
 
             Spacer()
@@ -95,6 +95,7 @@ struct EqualizerView: View {
                 Spacer()
                 Toggle("", isOn: $settings.equalizerEnabled)
                     .labelsHidden()
+                    .toggleStyle(.amoled)
             }
 
             EqualizerGraph(

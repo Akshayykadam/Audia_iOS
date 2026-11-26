@@ -34,7 +34,7 @@ struct TabHeaderView: View {
                 .foregroundStyle(AudiaTheme.textPrimary)
                 .lineLimit(1)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 9)
+                .frame(height: 40)
                 .audiaGlassCapsule(isInteractive: false)
 
             Spacer()

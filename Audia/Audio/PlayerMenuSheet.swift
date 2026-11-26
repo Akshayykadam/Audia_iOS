@@ -438,7 +438,7 @@ struct AddSongToPlaylistSheet: View {
                     .font(.satoshi(size: 16, weight: .bold))
                     .foregroundStyle(AudiaTheme.textPrimary)
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
+                    .frame(height: 40)
                     .audiaGlassCapsule(isInteractive: false)
 
                 Spacer()

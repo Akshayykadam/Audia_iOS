@@ -142,9 +142,10 @@ struct QueueView<ProgressSlider: View>: View {
                 }
             } label: {
                 Image(systemName: "chevron.down")
-                    .font(.satoshi(size: 14, weight: .bold))
+                    .font(.satoshi(size: 15, weight: .bold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
                     .audiaGlassCircle(isActive: false)
             }
 
@@ -173,15 +174,16 @@ struct QueueView<ProgressSlider: View>: View {
                         .font(.satoshi(size: 13.5, weight: .semibold))
                         .foregroundStyle(AudiaTheme.textPrimary)
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
+                        .frame(height: 40)
+                        .contentShape(Capsule())
                         .audiaGlassCapsule()
                 }
             } else {
-                Color.clear.frame(width: 34, height: 34)
+                Color.clear.frame(width: 64, height: 40)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 4)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
         .padding(.bottom, 6)
     }
 

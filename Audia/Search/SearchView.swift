@@ -116,7 +116,7 @@ struct SearchView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .frame(height: 40)
             .audiaGlassCapsule()
         }
         .padding(.horizontal, 16)

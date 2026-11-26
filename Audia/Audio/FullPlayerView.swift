@@ -60,9 +60,12 @@ struct FullPlayerView: View {
             let horizontalPadding: CGFloat = geometry.size.width < 375 ? 24 : 32
             let isCompact = geometry.size.height < 700
 
+            let dragCornerRadius: CGFloat = collapseOffset > 0
+                ? min(40, (collapseOffset / 24) * 40)
+                : 0
+
             ZStack {
                 AudiaTheme.background
-                    .ignoresSafeArea()
 
                 LyricsAmbientBackgroundView(colorScheme: colorScheme)
 
@@ -76,14 +79,17 @@ struct FullPlayerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.top, geometry.safeAreaInsets.top)
+                .padding(.bottom, geometry.safeAreaInsets.bottom)
             }
+            .ignoresSafeArea()
+            .clipShape(RoundedRectangle(cornerRadius: dragCornerRadius, style: .continuous))
             .onAppear {
                 if CommandLine.arguments.contains("-openQueue") {
                     showQueue = true
                 }
             }
             .offset(y: collapseOffset)
-            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: collapseOffset)
             .animation(.easeInOut(duration: 0.35), value: showQueue)
             .animation(.spring(response: 0.5, dampingFraction: 0.86), value: showLyrics)
             .simultaneousGesture(collapseDrag)
@@ -135,9 +141,10 @@ struct FullPlayerView: View {
                 onCollapse()
             }) {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
                     .audiaGlassCircle(isActive: false)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -159,9 +166,10 @@ struct FullPlayerView: View {
                     }
                 } label: {
                     Image(systemName: "quote.bubble")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundStyle(AudiaTheme.textPrimary)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
                         .audiaGlassCircle(isActive: false)
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -172,9 +180,10 @@ struct FullPlayerView: View {
                     showSongMenu = true
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundStyle(AudiaTheme.textPrimary)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
                         .audiaGlassCircle(isActive: false)
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -182,7 +191,7 @@ struct FullPlayerView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 
     private func queueContent(horizontalPadding: CGFloat) -> some View {
@@ -246,7 +255,7 @@ struct FullPlayerView: View {
             }
         }
         .padding(.horizontal, showLyrics ? 16 : 0)
-        .padding(.top, showLyrics ? 12 : 0)
+        .padding(.top, showLyrics ? 1 : 0)
         .padding(.bottom, showLyrics ? 4 : (isCompact ? 12 : 20))
 
         if showLyrics {
@@ -274,9 +283,10 @@ struct FullPlayerView: View {
                 }
             } label: {
                 Image(systemName: "quote.bubble.fill")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
                     .audiaGlassCircle(isActive: true)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -295,11 +305,12 @@ struct FullPlayerView: View {
                             .scaleEffect(0.8)
                     } else {
                         Image(systemName: "translate")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(AudiaTheme.textPrimary)
                     }
                 }
-                .frame(width: 44, height: 44)
+                .frame(width: 40, height: 40)
+                .contentShape(Circle())
                 .audiaGlassCircle(isActive: showTranslation)
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
@@ -425,11 +436,18 @@ private struct LyricsAmbientBackgroundView: View {
                 collapseOffset = value.translation.height
             }
             .onEnded { value in
-                defer { collapseOffset = 0 }
                 let isVertical = value.translation.height > abs(value.translation.width)
-                if isVertical, value.translation.height > 140 {
+                let shouldCollapse = isVertical && (
+                    value.translation.height > 140 ||
+                    value.predictedEndTranslation.height > 260
+                )
+                if shouldCollapse {
                     Haptics.soft()
                     onCollapse()
+                } else {
+                    withAnimation(.interactiveSpring(response: 0.32, dampingFraction: 0.84)) {
+                        collapseOffset = 0
+                    }
                 }
             }
     }

@@ -535,7 +535,7 @@ struct PlaylistDetailView: View {
                     .foregroundStyle(AudiaTheme.textPrimary)
                     .lineLimit(1)
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .frame(height: 40)
                     .audiaGlassCapsule(isInteractive: false)
                     .opacity(barProgress)
             }
@@ -544,7 +544,7 @@ struct PlaylistDetailView: View {
 
             topBarOptionsMenu
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 6)
         .background(alignment: .top) {
             LinearGradient(
