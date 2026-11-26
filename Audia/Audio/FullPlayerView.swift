@@ -182,7 +182,7 @@ struct FullPlayerView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.top, 5)
+        .padding(.top, 12)
     }
 
     private func queueContent(horizontalPadding: CGFloat) -> some View {

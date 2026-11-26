@@ -471,16 +471,23 @@ final class NowPlaying {
             do {
                 let radio = try await PersonalizationService.shared.fetchRadio(videoId: videoId)
                 let songs = radio.songs
-                guard !songs.isEmpty else {
+                // Radio mixes include the seed song at `currentIndex` (usually 0).
+                // Advance to the next suggested track so we don't replay the song that just ended.
+                let nextIndex: Int
+                if radio.currentIndex + 1 < songs.count {
+                    nextIndex = radio.currentIndex + 1
+                } else if let firstOther = songs.firstIndex(where: { $0.videoId != videoId }) {
+                    nextIndex = firstOther
+                } else {
                     isPlaying = false
                     return
                 }
                 self.queueSongs = songs
-                self.queueIndex = 0
+                self.queueIndex = nextIndex
                 if self.playbackMode == .shuffle {
                     self.playbackMode = .off
                 }
-                let first = songs[0]
+                let first = songs[nextIndex]
                 update(with: first)
                 try await PlaybackManager.shared.resolveAndPlay(videoId: first.videoId)
                 self.persistQueueState()

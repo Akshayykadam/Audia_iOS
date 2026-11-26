@@ -8,30 +8,40 @@ import SwiftUI
 /// A Spotify-style equalizer: a line graph across 10 band frequencies whose
 /// points can be dragged up/down (±12 dB), plus a horizontal preset strip.
 struct EqualizerView: View {
+    var isSheet: Bool = false
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.settingsStore) private var settings
     @State private var dragIndex: Int?
 
     private var customTopBar: some View {
-        HStack(spacing: 12) {
-            Button(action: { dismiss() }) {
+        HStack(spacing: 10) {
+            Button(action: {
+                Haptics.light()
+                dismiss()
+            }) {
                 Image(systemName: "chevron.left")
-                    .font(.satoshi(size: 17, weight: .semibold))
+                    .font(.satoshi(size: 16, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 36, height: 36)
-                    .background(AudiaTheme.surfaceVariant, in: Circle())
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
+                    .audiaGlassCircle()
             }
-            .buttonStyle(.plain)
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
             .accessibilityLabel("Back")
 
             Text("Equalizer")
-                .font(.satoshi(size: 26, weight: .bold))
+                .font(.satoshi(size: 17, weight: .bold))
                 .foregroundStyle(AudiaTheme.textPrimary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .audiaGlassCapsule(isInteractive: false)
 
             Spacer()
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.top, isSheet ? 10 : 8)
+        .padding(.bottom, 6)
     }
 
     var body: some View {
@@ -40,18 +50,36 @@ struct EqualizerView: View {
         VStack(spacing: 0) {
             customTopBar
 
-            ScrollView {
-                VStack(spacing: 24) {
+            if isSheet {
+                VStack(spacing: 12) {
                     equalizerCard(settings: settings)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 16)
 
                     presetStrip(settings: settings)
                 }
-                .padding(.top, 16)
-                .appBottomClearance()
+                .padding(.top, 4)
+                .padding(.bottom, 12)
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        equalizerCard(settings: settings)
+                            .padding(.horizontal, 16)
+
+                        presetStrip(settings: settings)
+                    }
+                    .padding(.top, 12)
+                    .appBottomClearance()
+                }
             }
         }
-        .audiaScreenBackground()
+        .background {
+            if !isSheet {
+                AudiaTheme.background.ignoresSafeArea()
+            } else {
+                Color.clear
+            }
+        }
+        .containerBackground(.clear, for: .navigation)
         .toolbar(.hidden, for: .navigationBar)
     }
 
@@ -59,10 +87,11 @@ struct EqualizerView: View {
 
     private func equalizerCard(settings: SettingsStore) -> some View {
         @Bindable var settings = settings
-        return VStack(spacing: 12) {
+        return VStack(spacing: isSheet ? 8 : 12) {
             HStack {
                 Text(LocalizedStringKey(settings.equalizerEnabled ? "Equalizer On" : "Equalizer Off"))
                     .font(.satoshi(.subheadline, weight: .semibold))
+                    .foregroundStyle(AudiaTheme.textPrimary)
                 Spacer()
                 Toggle("", isOn: $settings.equalizerEnabled)
                     .labelsHidden()
@@ -73,7 +102,7 @@ struct EqualizerView: View {
                 accentColor: settings.accentColor,
                 activeDrag: $dragIndex
             )
-            .frame(height: 260)
+            .frame(height: isSheet ? 155 : 260)
 
             HStack {
                 Text("\(Int(equalizerMinGain)) dB")
@@ -83,15 +112,17 @@ struct EqualizerView: View {
                 Text("+\(Int(equalizerMaxGain)) dB")
             }
             .font(.satoshi(.caption2))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AudiaTheme.textSecondary)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
-        .onChange(of: settings.equalizerEnabled) { _, enabled in
-            _ = enabled
+        .padding(isSheet ? 8 : 16)
+        .background {
+            if !isSheet {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.clear)
+                    .audiaGlassCard(cornerRadius: 18)
+            }
+        }
+        .onChange(of: settings.equalizerEnabled) { _, _ in
             PlayerController.shared.applyPlaybackSettings()
         }
     }
@@ -101,31 +132,27 @@ struct EqualizerView: View {
     private func presetStrip(settings: SettingsStore) -> some View {
         @Bindable var settings = settings
         return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 ForEach(EqualizerPresets.all, id: \.id) { preset in
                     let isSelected = settings.equalizerPresetID == preset.id
                     Button {
+                        Haptics.selection()
                         settings.equalizerGains = preset.gains
                         settings.equalizerPresetID = preset.id
                         PlayerController.shared.applyPlaybackSettings()
                     } label: {
                         Text(LocalizedStringKey(preset.name))
-                            .font(.satoshi(size: 14.5, weight: isSelected ? .bold : .medium))
-                            .padding(.horizontal, 16)
+                            .font(.satoshi(size: 14, weight: isSelected ? .bold : .medium))
+                            .foregroundStyle(AudiaTheme.textPrimary)
+                            .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(
-                                Capsule().fill(isSelected ? AudiaTheme.primary : AudiaTheme.surfaceVariant)
-                            )
-                            .overlay(
-                                Capsule().strokeBorder(isSelected ? Color.clear : AudiaTheme.surfaceBorder, lineWidth: 1)
-                            )
-                            .foregroundStyle(isSelected ? AudiaTheme.onPrimary : AudiaTheme.textPrimary)
-                            .foregroundColor(isSelected ? AudiaTheme.onPrimary : AudiaTheme.textPrimary)
+                            .contentShape(Capsule())
+                            .audiaGlassCapsule(isActive: isSelected)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.94))
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
         }
     }
 }

@@ -420,8 +420,15 @@ actor PersonalizationService {
 
     func fetchRadio(videoId: String, options: RadioOptions) async throws -> (songs: [SongItem], currentIndex: Int) {
         let playlistId = "RDAMVM\(videoId)"
-        let json = try await innerTube.next(videoId: videoId, playlistId: playlistId)
-        let panel = try extractPlaylistPanel(from: json)
+        let panel: PlaylistPanel
+        if let json = try? await innerTube.nextRadio(videoId: videoId, playlistId: playlistId),
+           let extracted = try? extractPlaylistPanel(from: json) {
+            panel = extracted
+        } else {
+            // Fallback: ask `next` with just `videoId` and resolve its automix endpoint.
+            let seedJson = try await innerTube.next(videoId: videoId)
+            panel = try extractPlaylistPanel(from: seedJson)
+        }
         var songs: [(SongItem, Bool)] = []
         for entry in panel.contents {
             guard songs.count < 50 else { break }
@@ -430,13 +437,13 @@ actor PersonalizationService {
                 songs.append((song, renderer["selected"] as? Bool ?? false))
             }
         }
-        guard !songs.isEmpty else { throw NSError(domain: "fetchRadio", code: 1, userInfo: [:]) }
-        let currentIndex = songs.firstIndex(where: { $0.1 }) ?? 0
         var resultSongs = songs.map(\.0)
         if let automixItems = await tryResolveAutomix(from: panel) {
             let deduped = automixItems.filter { a in !resultSongs.contains(where: { $0.videoId == a.videoId }) }
             resultSongs += deduped
         }
+        guard !resultSongs.isEmpty else { throw NSError(domain: "fetchRadio", code: 1, userInfo: [:]) }
+        let currentIndex = songs.firstIndex(where: { $0.1 }) ?? 0
         switch options.style {
         case .similar:
             break
@@ -489,7 +496,8 @@ actor PersonalizationService {
               let watchPlaylist = navEndpoint["watchPlaylistEndpoint"] as? [String: Any],
               let playlistId = watchPlaylist["playlistId"] as? String else { return nil }
         let autoVideoId = watchPlaylist["videoId"] as? String
-        guard let autoJson = try? await innerTube.next(videoId: autoVideoId, playlistId: playlistId),
+        let params = watchPlaylist["params"] as? String
+        guard let autoJson = try? await innerTube.nextRadio(videoId: autoVideoId, playlistId: playlistId, params: params),
               let autoPanel = try? extractPlaylistPanel(from: autoJson) else { return nil }
         var songs: [SongItem] = []
         for entry in autoPanel.contents {

@@ -247,8 +247,8 @@ struct HomeScreenView: View {
     }
 
     private func handleSongTap(_ song: SongItem, in queue: [SongItem]) {
-        Log.homeScreenView.debug("Tapped song in queue: \(song.title) queueCount=\(queue.count)")
-        PlaybackQueue.play(song, in: queue, log: Log.homeScreenView, context: "Tapped song")
+        Log.homeScreenView.debug("Tapped song for radio playback: \(song.title)")
+        PlaybackQueue.playSingleWithRadio(song, log: Log.homeScreenView)
     }
 
     private func handleItemTap(_ item: YTItem) {

@@ -33,7 +33,7 @@ struct PlayerMenuSheet: View {
     @ObservedObject private var downloadManager = DownloadManager.shared
 
     var body: some View {
-        SheetChrome(detents: [.height(370), .large]) {
+        SheetChrome(detents: [.height(370)]) {
             Group {
                 // Top 3 action boxes: Save, Download, Share
                 topActionBoxes
@@ -77,7 +77,7 @@ struct PlayerMenuSheet: View {
             .navigationDestination(for: Destination.self) { dest in
                 switch dest {
                 case .equalizer:
-                    EqualizerView()
+                    EqualizerView(isSheet: true)
                 }
             }
         }
@@ -416,7 +416,52 @@ struct AddSongToPlaylistSheet: View {
     @State private var isCreating = false
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.light()
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.satoshi(size: 15, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
+                        .audiaGlassCircle()
+                }
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
+                .accessibilityLabel("Done")
+
+                Spacer()
+
+                Text("Add to Playlist")
+                    .font(.satoshi(size: 16, weight: .bold))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .audiaGlassCapsule(isInteractive: false)
+
+                Spacer()
+
+                Button {
+                    Haptics.light()
+                    newPlaylistTitle = ""
+                    showNewPlaylistAlert = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.satoshi(size: 17, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
+                        .audiaGlassCircle()
+                }
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
+                .accessibilityLabel("New playlist")
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
             Group {
                 if isLoading {
                     ProgressView()
@@ -435,11 +480,11 @@ struct AddSongToPlaylistSheet: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(playlist.name)
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(AudiaTheme.textPrimary)
                                     if let count = playlist.remoteSongCount {
                                         Text("\(count) songs")
                                             .font(.satoshi(.footnote))
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(AudiaTheme.textSecondary)
                                     }
                                 }
                                 Spacer()
@@ -449,38 +494,28 @@ struct AddSongToPlaylistSheet: View {
                                 }
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("Add to Playlist")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        newPlaylistTitle = ""
-                        showNewPlaylistAlert = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("New playlist")
-                }
-            }
-            .textPrompt(
-                "New Playlist",
-                isPresented: $showNewPlaylistAlert,
-                placeholder: "Playlist name",
-                text: $newPlaylistTitle,
-                okTitle: "Create",
-                message: Text("Adds “\(song.title)” once created.")
-            ) {
-                Task { await createAndAdd() }
-            }
-            .task { await loadPlaylists() }
         }
-        .appSheetChrome()
+        .background(Color.clear)
+        .textPrompt(
+            "New Playlist",
+            isPresented: $showNewPlaylistAlert,
+            placeholder: "Playlist name",
+            text: $newPlaylistTitle,
+            okTitle: "Create",
+            message: Text("Adds “\(song.title)” once created.")
+        ) {
+            Task { await createAndAdd() }
+        }
+        .task { await loadPlaylists() }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.hidden)
+        .audiaSheetBackground()
     }
 
     private func loadPlaylists() async {
