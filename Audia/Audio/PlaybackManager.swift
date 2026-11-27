@@ -71,7 +71,9 @@ actor PlaybackManager {
         }
 
         if let existing = inflightResolutions[videoId] {
-            return try await existing.value
+            let result = try await existing.value
+            await playNetworkResult(result, videoId: videoId)
+            return result
         }
 
         let task = Task { [self] in

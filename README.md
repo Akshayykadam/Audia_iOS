@@ -16,20 +16,14 @@ No unnecessary clutter. No annoying ads. Just you and your music.
 A little preview of what your music experience looks like.
 
 <p align="center">
-  <img src="App%20UI%20Screenshots/screenshot-01.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-02.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-03.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-04.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-05.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-06.png" width="16%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2027-11-2026%20at%207.04.34%E2%80%AFPM.png" width="28%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2027-11-2026%20at%207.04.39%E2%80%AFPM.png" width="28%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2027-11-2026%20at%207.04.50%E2%80%AFPM.png" width="28%" />
 </p>
 <p align="center">
-  <img src="App%20UI%20Screenshots/screenshot-07.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-08.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-09.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-10.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-11.png" width="16%" />
-  <img src="App%20UI%20Screenshots/screenshot-12.png" width="16%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2027-11-2026%20at%207.05.13%E2%80%AFPM.png" width="28%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2027-11-2026%20at%207.05.19%E2%80%AFPM.png" width="28%" />
+  <img src="App%20UI%20Screenshots/Screenshot%20iPhone%2017%20Pro%2027-11-2026%20at%207.05.36%E2%80%AFPM.png" width="28%" />
 </p>
 
 ---
@@ -46,11 +40,13 @@ Your music deserves more than basic playback controls.
 - **MPVKit Audio Engine** — Powered by libmpv for reliable, low-latency playback.
 - **Background Playback** — Keep the music going with full Lock Screen, Control Center, Live Activity, and Dynamic Island integration.
 - **Synchronized Lyrics & Translation** — Apple Music-style in-place lyrics with tap-to-seek, live translation toggle (persisted across sessions), and an adaptive ambient artwork background.
-- **10-Band Equalizer** — Shape your sound with ±12 dB controls and 15 built-in presets inside a Liquid Glass sheet.
+- **10-Band Equalizer & Per-Output Profiles** — Shape your sound with ±12 dB controls, preamp gain, 23 built-in presets, custom user presets, and automatic per-output profiles for Speaker, Headphones, and Bluetooth devices inside a Liquid Glass sheet.
+- **Spatial Audio Modes** — Enhance your soundstage with `Natural`, `Wide`, `3D`, and `Concert` spatial audio modes powered by mpv audio filters.
+- **SyncPlay (Group Listening)** — Listen together in real time over local or remote networks with QR code room sharing, time synchronization, and automatic drift correction.
 - **Audio Normalization** — Consistent volume using EBU R128 loudness normalization.
 - **Gapless Playback** — Move between tracks without missing a beat.
 - **In-App Volume Control** — Adjust volume right from the player.
-- **Artwork & Player Gestures** — Swipe album artwork to skip tracks, drag down anywhere to smoothly minimize the player, and feel tactile haptics on playback controls and scrubbing.
+- **Immersive Full Player & Gestures** — Full-bleed artwork background, swipe album artwork to skip tracks, drag down anywhere to smoothly minimize the player, and feel tactile haptics on playback controls and scrubbing.
 
 ### Music Is Better When You Can See It
 
@@ -115,6 +111,7 @@ Because the little details matter.
 - **iOS 26 Liquid Glass Design** — Floating Liquid Glass headers, capsule tab bar, mini-player, and translucent sheets tailored for both **Light** and **Dark** Mode.
 - **Home & Lock Screen Widgets** — Interactive **Now Playing** (Small full-bleed & Medium with Play/Pause/Skip and live scrubber) and **Recently Played** (Small, Medium, Large) widgets supporting Default, Dark, Clear, and Tinted Home Screen styles.
 - **Safari & Share Sheet Extensions** — Open YouTube and YouTube Music links directly in Audia from Safari or the iOS Share Sheet.
+- **Native Audia Links & Deep Linking** — Optionally share native `audia-music.vercel.app` links and open songs, albums, playlists, artists, and SyncPlay rooms directly in the app.
 - **Satoshi Typography** — Modern, clean typography throughout the app.
 - **Player Backgrounds** — Choose artwork-based ambient glow effects or a clean, solid background.
 - **Regional Controls** — Choose from 14 content regions and manage explicit content filtering.
