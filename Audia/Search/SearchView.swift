@@ -184,10 +184,16 @@ struct SearchView: View {
     }
 
     /// Focuses the field (raising the keyboard) whenever the Search tab
-    /// becomes active.
+    /// becomes active, slightly deferred so the tab transition stays smooth.
     private func focusIfSearchTab() {
         if AppRouter.shared.selectedTabIndex == 1 {
-            fieldFocused = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                if AppRouter.shared.selectedTabIndex == 1 {
+                    fieldFocused = true
+                }
+            }
+        } else if fieldFocused {
+            fieldFocused = false
         }
     }
 

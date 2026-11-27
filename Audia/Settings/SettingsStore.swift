@@ -153,6 +153,39 @@ final class SettingsStore {
         didSet { Self.defaults.set(equalizerGains, forKey: Keys.equalizerGains) }
     }
 
+    /// Overall EQ preamp gain in dB (-12...+12).
+    var equalizerPreampDb: Double {
+        didSet { Self.defaults.set(equalizerPreampDb, forKey: Keys.equalizerPreampDb) }
+    }
+
+    /// User-saved custom presets.
+    var equalizerCustomPresets: [EqualizerPreset] {
+        didSet {
+            if let data = try? JSONEncoder().encode(equalizerCustomPresets) {
+                Self.defaults.set(data, forKey: Keys.equalizerCustomPresets)
+            }
+        }
+    }
+
+    /// Whether EQ automatically switches profiles per audio output route.
+    var equalizerPerOutputEnabled: Bool {
+        didSet { Self.defaults.set(equalizerPerOutputEnabled, forKey: Keys.equalizerPerOutputEnabled) }
+    }
+
+    /// Stored EQ profiles keyed by `AudioOutputRoute.rawValue`.
+    var equalizerOutputProfiles: [String: EqualizerOutputProfile] {
+        didSet {
+            if let data = try? JSONEncoder().encode(equalizerOutputProfiles) {
+                Self.defaults.set(data, forKey: Keys.equalizerOutputProfiles)
+            }
+        }
+    }
+
+    /// Spatial sound mode applied via mpv audio filters.
+    var spatialAudioMode: SpatialAudioMode {
+        didSet { Self.defaults.set(spatialAudioMode.rawValue, forKey: Keys.spatialAudioMode) }
+    }
+
     var audioQuality: AudioQuality {
         didSet { Self.defaults.set(audioQuality.rawValue, forKey: Keys.audioQuality) }
     }
@@ -298,6 +331,11 @@ final class SettingsStore {
         static let equalizerEnabled = "settings.equalizerEnabled"
         static let equalizerPresetID = "settings.equalizerPresetID"
         static let equalizerGains = "settings.equalizerGains"
+        static let equalizerPreampDb = "settings.equalizerPreampDb"
+        static let equalizerCustomPresets = "settings.equalizerCustomPresets"
+        static let equalizerPerOutputEnabled = "settings.equalizerPerOutputEnabled"
+        static let equalizerOutputProfiles = "settings.equalizerOutputProfiles"
+        static let spatialAudioMode = "settings.spatialAudioMode"
         static let audioQuality = "settings.audioQuality"
         static let audioNormalization = "settings.audioNormalization"
         static let gaplessPlayback = "settings.gaplessPlayback"
@@ -361,6 +399,21 @@ final class SettingsStore {
         } else {
             equalizerGains = EqualizerPresets.all.first?.gains ?? Array(repeating: 0, count: equalizerFrequencies.count)
         }
+        equalizerPreampDb = Self.load(Keys.equalizerPreampDb, default: 0.0)
+        if let data = d.data(forKey: Keys.equalizerCustomPresets),
+           let decoded = try? JSONDecoder().decode([EqualizerPreset].self, from: data) {
+            equalizerCustomPresets = decoded
+        } else {
+            equalizerCustomPresets = []
+        }
+        equalizerPerOutputEnabled = Self.load(Keys.equalizerPerOutputEnabled, default: false)
+        if let data = d.data(forKey: Keys.equalizerOutputProfiles),
+           let decoded = try? JSONDecoder().decode([String: EqualizerOutputProfile].self, from: data) {
+            equalizerOutputProfiles = decoded
+        } else {
+            equalizerOutputProfiles = [:]
+        }
+        spatialAudioMode = Self.loadEnum(Keys.spatialAudioMode, default: .off)
         audioQuality = Self.loadEnum(Keys.audioQuality, default: .auto)
         audioNormalization = Self.load(Keys.audioNormalization, default: false)
         gaplessPlayback = Self.load(Keys.gaplessPlayback, default: true)
@@ -391,6 +444,56 @@ final class SettingsStore {
         spotifyClientSecret = Self.loadString(Keys.spotifyClientSecret, default: "")
         syncPlayGuestName = Self.loadString(Keys.syncPlayGuestName, default: "")
         syncPlayServerUrl = Self.loadString(Keys.syncPlayServerUrl, default: SyncPlayWebSocketClient.defaultServerUrl)
+        applyEqualizerProfileIfNeeded(for: AudioOutputRoute.current())
+    }
+
+    // MARK: - Equalizer Helpers
+
+    func saveCustomEqualizerPreset(name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let id = "custom_\(UUID().uuidString.prefix(8))"
+        let preset = EqualizerPreset(id: id, name: trimmed, gains: equalizerGains)
+        equalizerCustomPresets.append(preset)
+        equalizerPresetID = id
+        saveCurrentEqualizerProfileIfNeeded()
+    }
+
+    func deleteCustomEqualizerPreset(id: String) {
+        equalizerCustomPresets.removeAll { $0.id == id }
+        if equalizerPresetID == id {
+            equalizerPresetID = "custom"
+        }
+    }
+
+    func saveCurrentEqualizerProfileIfNeeded(for route: AudioOutputRoute = AudioOutputRoute.current()) {
+        guard equalizerPerOutputEnabled else { return }
+        equalizerOutputProfiles[route.rawValue] = EqualizerOutputProfile(
+            presetID: equalizerPresetID,
+            gains: equalizerGains,
+            preampDb: equalizerPreampDb,
+            spatialMode: spatialAudioMode
+        )
+    }
+
+    func applyEqualizerProfileIfNeeded(for route: AudioOutputRoute = AudioOutputRoute.current()) {
+        guard equalizerPerOutputEnabled, let profile = equalizerOutputProfiles[route.rawValue] else { return }
+        equalizerPresetID = profile.presetID
+        if profile.gains.count == equalizerFrequencies.count {
+            equalizerGains = profile.gains
+        }
+        equalizerPreampDb = profile.preampDb
+        if let spatial = profile.spatialMode {
+            spatialAudioMode = spatial
+        }
+    }
+
+    func resetEqualizer() {
+        equalizerGains = EqualizerPresets.all.first?.gains ?? Array(repeating: 0, count: equalizerFrequencies.count)
+        equalizerPreampDb = 0
+        equalizerPresetID = "flat"
+        spatialAudioMode = .off
+        saveCurrentEqualizerProfileIfNeeded()
     }
 }
 

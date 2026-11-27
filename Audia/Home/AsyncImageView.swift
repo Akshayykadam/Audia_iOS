@@ -31,8 +31,12 @@ struct AsyncImageView: View {
                 }
         } else {
             GeometryReader { geometry in
+                let w = geometry.size.width
+                let h = geometry.size.height
+                let taskId = "\(url ?? "")_\(Int(w / 24))x\(Int(h / 24))"
                 content(size: geometry.size)
-                    .task(id: url) {
+                    .task(id: taskId) {
+                        guard w > 1, h > 1 else { return }
                         await loadImage(targetSize: geometry.size)
                     }
             }
@@ -58,21 +62,19 @@ struct AsyncImageView: View {
             loadedImage = nil
             return
         }
+        let scale = max(displayScale, 2.0)
+        let minPixels: CGFloat = 180 * scale
+        let displaySize = CGSize(
+            width: max(targetSize.width * scale, minPixels),
+            height: max(targetSize.height * scale, minPixels)
+        )
         let resolvedURL: URL?
         if urlString.hasPrefix("localcover://") {
             let filename = String(urlString.dropFirst("localcover://".count))
             resolvedURL = PlaylistCoverStorage.url(for: filename)
         } else {
-            let scale = displayScale
-            // Prevent zero-size layout passes from causing degenerate image cache requests.
-            let minPixels: CGFloat = 120 * scale
-            let displaySize = CGSize(
-                width: max(targetSize.width * scale, minPixels),
-                height: max(targetSize.height * scale, minPixels)
-            )
-            // Request the ladder rung covering this surface (BitChord-style),
-            // so rows, cards and headers each share one cache entry.
-            let rung = ArtworkURLs.rung(for: max(displaySize.width, displaySize.height))
+            let maxPt = max(targetSize.width, targetSize.height)
+            let rung = maxPt > 200 ? 1200 : max(ArtworkURLs.rung(for: max(displaySize.width, displaySize.height)), 544)
             let normalized = normalizeThumbnailURL(urlString, pixels: rung)
             resolvedURL = URL(string: normalized)
         }
@@ -80,12 +82,6 @@ struct AsyncImageView: View {
             loadedImage = nil
             return
         }
-        let scale = displayScale
-        let minPixels: CGFloat = 120 * scale
-        let displaySize = CGSize(
-            width: max(targetSize.width * scale, minPixels),
-            height: max(targetSize.height * scale, minPixels)
-        )
         let request: ImageRequest
         if contentMode == .fill {
             request = ImageRequest(
@@ -190,6 +186,16 @@ private func normalizeThumbnailURL(_ urlString: String, pixels: Int) -> String {
             // Bare CDN URL with no size params: pin an explicit size instead
             // of trusting the server default.
             url = String(base) + "=w\(pixels)-h\(pixels)"
+        }
+    }
+
+    if url.contains("i.ytimg.com") {
+        let targetFile = pixels >= 800 ? "sddefault.jpg" : "hqdefault.jpg"
+        for lowRes in ["default.jpg", "mqdefault.jpg"] {
+            if url.hasSuffix("/\(lowRes)") {
+                url = url.replacingOccurrences(of: "/\(lowRes)", with: "/\(targetFile)")
+                break
+            }
         }
     }
 

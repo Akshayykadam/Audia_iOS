@@ -13,10 +13,17 @@ import Nuke
 /// tab bar, matching the Apple Music behavior; otherwise it renders as the
 /// 48pt floating glass capsule with a bottom progress line.
 struct MiniPlayerBarView: View {
+    var isAccessory: Bool = false
+    var isCompactInline: Bool = false
+    var overrideColorScheme: ColorScheme? = nil
     let onExpand: () -> Void
 
     @Environment(MiniPlayerScrollState.self) private var scrollState
     @Environment(\.colorScheme) private var colorScheme
+
+    private var effectiveColorScheme: ColorScheme {
+        overrideColorScheme ?? colorScheme
+    }
 
     private let player = PlayerController.shared
     @Bindable private var np = NowPlaying.shared
@@ -31,41 +38,57 @@ struct MiniPlayerBarView: View {
     }
 
     private var isInline: Bool {
-        scrollState.isInline
+        isCompactInline || scrollState.isInline
     }
 
     private var barHeight: CGFloat {
-        72
+        if isCompactInline { return 48 }
+        return isAccessory ? 52 : 72
     }
 
     private var artworkSize: CGFloat {
-        54
+        if isCompactInline { return 34 }
+        return isAccessory ? 38 : 54
     }
 
     private var titleColor: Color {
-        AudiaTheme.textPrimary
+        effectiveColorScheme == .dark ? .white : .black
     }
 
     private var artistColor: Color {
-        AudiaTheme.textSecondary
+        effectiveColorScheme == .dark ? Color.white.opacity(0.70) : Color.black.opacity(0.78)
     }
 
     var body: some View {
-        HStack(spacing: 0) {
+        let content = HStack(spacing: 0) {
             pagingArea
-            HStack(spacing: 14) {
+            HStack(spacing: isCompactInline ? 8 : 14) {
                 playPauseButton
-                nextButton
+                if !isCompactInline {
+                    nextButton
+                }
             }
-            .padding(.trailing, 16)
+            .padding(.trailing, isCompactInline ? 10 : 16)
         }
         .frame(height: barHeight)
         .frame(maxWidth: .infinity)
-        .overlay(alignment: .bottom) { MiniPlayerProgressBar() }
-        .clipShape(Capsule())
-        .audiaGlassCapsule()
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.08), radius: 14, y: 5)
-        .padding(.horizontal, 16)
+        .overlay(alignment: .bottom) {
+            if !isCompactInline {
+                MiniPlayerProgressBar()
+            }
+        }
+
+        Group {
+            if isAccessory {
+                content
+            } else {
+                content
+                    .clipShape(Capsule())
+                    .audiaGlassCapsule()
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.08), radius: 14, y: 5)
+                    .padding(.horizontal, 16)
+            }
+        }
         .onChange(of: np.videoId) { _, _ in
             dragOffset = 0
         }
@@ -112,35 +135,35 @@ struct MiniPlayerBarView: View {
     }
 
     private func page(for song: SongItem, width: CGFloat) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: isAccessory ? 10 : 12) {
             barArtwork(for: song.videoId)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: isAccessory ? 1 : 3) {
                 if isInline {
                     Text(song.title)
-                        .font(.satoshi(size: 16, weight: .semibold))
+                        .font(.satoshi(size: isAccessory ? 14 : 16, weight: .semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(titleColor)
                 } else {
                     MarqueeText(
                         text: song.title,
-                        font: .satoshi(size: 16, weight: .semibold),
-                        frameHeight: 24,
+                        font: .satoshi(size: isAccessory ? 15 : 16, weight: .semibold),
+                        frameHeight: isAccessory ? 20 : 24,
                         textColor: titleColor
                     )
                 }
 
                 Text(artistLine(for: song))
-                    .font(.satoshi(size: 14, weight: .medium))
+                    .font(.satoshi(size: isAccessory ? 12 : 14, weight: .medium))
                     .foregroundStyle(artistColor)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, 10)
-        .padding(.trailing, 14)
+        .padding(.leading, isAccessory ? 8 : 10)
+        .padding(.trailing, isAccessory ? 10 : 14)
         .frame(width: width, alignment: .leading)
         .contentShape(Rectangle())
     }
@@ -168,12 +191,12 @@ struct MiniPlayerBarView: View {
         }) {
             ZStack {
                 Circle()
-                    .fill(AudiaTheme.primaryLight)
-                    .frame(width: 44, height: 44)
+                    .fill(effectiveColorScheme == .dark ? Color.white : Color.black)
+                    .frame(width: isCompactInline ? 30 : (isAccessory ? 36 : 44), height: isCompactInline ? 30 : (isAccessory ? 36 : 44))
                 Image(systemName: np.isPlaying ? "pause.fill" : "play.fill")
                     .contentTransition(.symbolEffect(.replace))
-                    .font(.satoshi(size: 18, weight: .bold))
-                    .foregroundStyle(AudiaTheme.onPrimary)
+                    .font(.satoshi(size: isCompactInline ? 13 : (isAccessory ? 15 : 18), weight: .bold))
+                    .foregroundStyle(effectiveColorScheme == .dark ? Color.black : Color.white)
             }
             .contentShape(Circle())
         }
@@ -188,7 +211,7 @@ struct MiniPlayerBarView: View {
         }) {
             Image(systemName: "forward.end.fill")
                 .font(.satoshi(size: 19, weight: .semibold))
-                .foregroundStyle(AudiaTheme.textSecondary)
+                .foregroundStyle(titleColor.opacity(0.85))
                 .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
         }

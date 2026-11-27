@@ -14,8 +14,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
-        UIWindow.appearance().tintColor = .white
-        UIView.appearance().tintColor = .white
         PlayerController.registerRemoteControlSupport()
         return true
     }
@@ -24,7 +22,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
     ) -> UIInterfaceOrientationMask {
-        window?.tintColor = .white
         return .portrait
     }
 }
@@ -158,14 +155,20 @@ struct AudiaApp: App {
             ContentView()
                 .font(.satoshi(.body))
                 .preferredColorScheme(settings.preferredColorScheme)
-                .tint(settings.effectiveAccentColor)
+                .tint(settings.accentName == AccentPreset.all.first?.name ? AudiaTheme.primary : settings.effectiveAccentColor)
                 .environment(settings)
                 .environment(\.downloadManager, DownloadManager.shared)
                 .onOpenURL { url in
                     DeepLinkHandler.handle(url: url)
                 }
                 #if canImport(UIKit)
-                .background(WindowTintWhiteView())
+                .background(
+                    WindowTintView(
+                        themeMode: settings.themeMode,
+                        isMonochrome: settings.accentName == AccentPreset.all.first?.name,
+                        customTint: UIColor(settings.accentColor)
+                    )
+                )
                 #endif
         }
     }
@@ -189,21 +192,48 @@ struct AudiaApp: App {
 }
 
 #if canImport(UIKit)
-private struct WindowTintWhiteView: UIViewRepresentable {
+private struct WindowTintView: UIViewRepresentable {
+    let themeMode: ThemeMode
+    let isMonochrome: Bool
+    let customTint: UIColor
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var uiStyle: UIUserInterfaceStyle {
+        switch themeMode {
+        case .light: return .light
+        case .dark: return .dark
+        case .system: return .unspecified
+        }
+    }
+
+    private var resolvedTint: UIColor {
+        if isMonochrome {
+            return colorScheme == .dark
+                ? UIColor.white
+                : UIColor(red: 0.06, green: 0.06, blue: 0.06, alpha: 1.0)
+        }
+        return customTint
+    }
+
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         view.isUserInteractionEnabled = false
         view.backgroundColor = .clear
+        let tint = resolvedTint
         DispatchQueue.main.async {
-            view.window?.tintColor = .white
-            UIWindow.appearance().tintColor = .white
+            view.window?.overrideUserInterfaceStyle = uiStyle
+            view.window?.tintColor = tint
+            UITabBar.appearance().tintColor = tint
         }
         return view
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
+        let tint = resolvedTint
         DispatchQueue.main.async {
-            uiView.window?.tintColor = .white
+            uiView.window?.overrideUserInterfaceStyle = uiStyle
+            uiView.window?.tintColor = tint
+            UITabBar.appearance().tintColor = tint
         }
     }
 }

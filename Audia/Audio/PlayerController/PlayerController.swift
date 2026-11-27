@@ -301,6 +301,24 @@ extension PlayerController {
 
         let chain: String = {
             var filters: [String] = []
+
+            // 1. Preamp / headroom & loudness normalization before EQ
+            var totalGainDb = 0.0
+            var hasVolumeFilter = false
+            if eqEnabled, abs(settings.equalizerPreampDb) > 0.05 {
+                totalGainDb += settings.equalizerPreampDb
+                hasVolumeFilter = true
+            }
+            if norm, let loudness, loudness.isFinite {
+                totalGainDb += max(-12, min(12, -14 - loudness))
+                hasVolumeFilter = true
+            }
+            if hasVolumeFilter {
+                let clamped = max(-18, min(18, totalGainDb))
+                filters.append("volume=\(Self.fmt(clamped))dB")
+            }
+
+            // 2. 10-band FIR equalizer
             if eqEnabled {
                 let entries = zip(equalizerFrequencies, eqGains)
                     .map { "entry(\(Self.fmt($0.0)),\(Self.fmt($0.1)))" }
@@ -309,17 +327,28 @@ extension PlayerController {
                     filters.append("firequalizer=gain_entry=\"\(entries)\"")
                 }
             }
-            if norm, let loudness, loudness.isFinite {
-                let gain = max(-12, min(12, -14 - loudness))
-                filters.append("volume=\(Self.fmt(gain))dB")
+
+            // 3. Spatial sound (crossfeed / M-S width / subtle room)
+            let spatialFilters = settings.spatialAudioMode.mpvFilters
+            if !spatialFilters.isEmpty {
+                filters.append(contentsOf: spatialFilters)
             }
+
+            // 4. Brickwall safety limiter at -0.45 dBFS to prevent clipping
+            if !filters.isEmpty {
+                filters.append("alimiter=limit=0.95:attack=5:release=100:level=disabled")
+            }
+
             return filters.joined(separator: ",")
         }()
 
         withMpv { mpv in
             mpv_set_property_string(mpv, "gapless-audio", gapless ? "yes" : "no")
             let result = mpv_set_property_string(mpv, "af", chain.isEmpty ? "" : chain)
-            if result < 0 { Log.player.error("Failed to set af chain '\(chain)': mpv error \(result)") }
+            if result < 0 {
+                Log.player.error("Failed to set af chain '\(chain)': mpv error \(result); clearing af")
+                mpv_set_property_string(mpv, "af", "")
+            }
         }
         applyPlayerVolume()
     }
@@ -1004,6 +1033,15 @@ extension PlayerController {
         if reason == .oldDeviceUnavailable, playState.value == .playing {
             Task { @MainActor in togglePlayPause() }
         }
+        if reason == .newDeviceAvailable || reason == .oldDeviceUnavailable || reason == .override {
+            Task { @MainActor in
+                let settings = SettingsStore.shared
+                if settings.equalizerPerOutputEnabled {
+                    settings.applyEqualizerProfileIfNeeded(for: AudioOutputRoute.current())
+                    self.applyPlaybackSettings()
+                }
+            }
+        }
     }
 }
 
@@ -1115,8 +1153,8 @@ extension PlayerController {
         MainActor.assumeIsolated {
             UIApplication.shared.beginReceivingRemoteControlEvents()
             #if canImport(UIKit)
-            UIWindow.appearance().tintColor = .white
-            UIView.appearance().tintColor = .white
+            UIWindow.appearance().tintColor = .label
+            UIView.appearance().tintColor = .label
             #endif
             PlayerController.shared.assertAudioSession()
             PlayerController.shared.setupRemoteCommands()
