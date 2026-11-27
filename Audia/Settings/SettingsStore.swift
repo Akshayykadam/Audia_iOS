@@ -278,6 +278,16 @@ final class SettingsStore {
         didSet { Self.defaults.set(spotifyClientSecret, forKey: Keys.spotifyClientSecret) }
     }
 
+    // MARK: - Listen Together (SyncPlay)
+
+    var syncPlayGuestName: String {
+        didSet { Self.defaults.set(syncPlayGuestName, forKey: Keys.syncPlayGuestName) }
+    }
+
+    var syncPlayServerUrl: String {
+        didSet { Self.defaults.set(syncPlayServerUrl, forKey: Keys.syncPlayServerUrl) }
+    }
+
     // MARK: - Keys
 
     private enum Keys {
@@ -316,6 +326,8 @@ final class SettingsStore {
         static let syncSongs = "settings.syncSongs"
         static let spotifyClientId = "settings.spotifyClientId"
         static let spotifyClientSecret = "settings.spotifyClientSecret"
+        static let syncPlayGuestName = "settings.syncPlayGuestName"
+        static let syncPlayServerUrl = "settings.syncPlayServerUrl"
     }
 
     private static let defaults: UserDefaults = .standard
@@ -358,7 +370,7 @@ final class SettingsStore {
         lastRadioLimit = Self.load(Keys.lastRadioLimit, default: 25)
         lastRadioAllowExplicit = Self.load(Keys.lastRadioAllowExplicit, default: true)
         playerVolume = Self.load(Keys.playerVolume, default: 1)
-        artworkSwipeNavigation = Self.load(Keys.artworkSwipeNavigation, default: true)
+        artworkSwipeNavigation = true
         audioOnlyMode = Self.load(Keys.audioOnlyMode, default: true)
         hideExplicit = Self.load(Keys.hideExplicit, default: false)
         showQuickPicks = Self.load(Keys.showQuickPicks, default: true)
@@ -377,6 +389,8 @@ final class SettingsStore {
         syncSongs = Self.load(Keys.syncSongs, default: true)
         spotifyClientId = Self.loadString(Keys.spotifyClientId, default: "")
         spotifyClientSecret = Self.loadString(Keys.spotifyClientSecret, default: "")
+        syncPlayGuestName = Self.loadString(Keys.syncPlayGuestName, default: "")
+        syncPlayServerUrl = Self.loadString(Keys.syncPlayServerUrl, default: SyncPlayWebSocketClient.defaultServerUrl)
     }
 }
 

@@ -220,8 +220,17 @@ extension AudiaLibraryStore {
                 arguments: [entry.playlistId]
             ) ?? 0
             try db.execute(
-                sql: "UPDATE playlist SET remote_song_count = ? WHERE id = ?",
-                arguments: [count, entry.playlistId]
+                sql: """
+                    UPDATE playlist
+                    SET remote_song_count = ?,
+                        thumbnail_url = CASE
+                            WHEN thumbnail_url IS NULL OR thumbnail_url = ''
+                            THEN COALESCE((SELECT thumbnail_url FROM song WHERE id = ?), thumbnail_url)
+                            ELSE thumbnail_url
+                        END
+                    WHERE id = ?
+                    """,
+                arguments: [count, entry.songId, entry.playlistId]
             )
         }
     }

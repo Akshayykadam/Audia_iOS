@@ -13,6 +13,7 @@ struct TabHeaderView: View {
     var onSearch: (() -> Void)? = nil
     var onHistory: (() -> Void)? = nil
     var onAdd: (() -> Void)? = nil
+    var showListenTogether: Bool = false
     var onAccount: () -> Void
 
     private var displayTitle: String {
@@ -85,8 +86,29 @@ struct TabHeaderView: View {
                 glassCircleButton(systemName: "plus", size: 18, label: "Add playlist", action: onAdd)
             }
 
+            if showListenTogether {
+                listenTogetherButton
+            }
+
             glassCircleButton(systemName: "gearshape.fill", size: 17, label: "Settings", action: onAccount)
         }
+    }
+
+    private var listenTogetherButton: some View {
+        let isActive = SyncPlayManager.shared.session != nil
+        return Button {
+            Haptics.light()
+            SyncPlayManager.shared.isModalPresented = true
+        } label: {
+            Image(systemName: "person.2.wave.2.fill")
+                .font(.satoshi(size: 15, weight: .semibold))
+                .foregroundStyle(isActive ? Color.green : AudiaTheme.textPrimary)
+                .frame(width: 40, height: 40)
+                .contentShape(Circle())
+                .audiaGlassCircle(isActive: false)
+        }
+        .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
+        .accessibilityLabel("Listen Together")
     }
 
     private func glassCircleButton(

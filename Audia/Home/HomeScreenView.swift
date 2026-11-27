@@ -34,6 +34,7 @@ struct HomeScreenView: View {
                     TabHeaderView(
                         title: "Home",
                         scrimHeight: hasChips ? 185 : 135,
+                        showListenTogether: true,
                         onAccount: { router.homePath.append(DetailRoute.settings) }
                     )
 

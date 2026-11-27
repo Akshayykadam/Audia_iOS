@@ -99,6 +99,16 @@ final class PlayerController {
         } ?? 0
     }
 
+    private(set) var currentSpeed: Double = 1.0
+
+    func setSpeed(_ speed: Double) {
+        currentSpeed = speed
+        withMpv { mpv in
+            var val = speed
+            mpv_set_property(mpv, "speed", MPV_FORMAT_DOUBLE, &val)
+        }
+    }
+
     enum State: Equatable { case stopped, playing, paused }
 
     private init() {
@@ -233,6 +243,10 @@ extension PlayerController {
     }
 
     func seek(to time: TimeInterval) {
+        if !SyncPlayManager.shared.isApplyingRemoteCommand,
+           SyncPlayManager.shared.handleUserSeek(to: time) {
+            return
+        }
         pendingSeek = (time, Date().addingTimeInterval(1.5))
         NowPlaying.shared.currentTime = time
         withMpv { mpv in
@@ -262,6 +276,10 @@ extension PlayerController {
     }
 
     func togglePlayPause() {
+        if !SyncPlayManager.shared.isApplyingRemoteCommand,
+           SyncPlayManager.shared.handleUserPlayPauseToggle() {
+            return
+        }
         setPaused(playState.value == .playing)
     }
 
@@ -1132,7 +1150,10 @@ extension PlayerController {
         center.playCommand.isEnabled = true
         let playToken = center.playCommand.addTarget { [weak self] _ in
             Log.player.info("REMOTE_COMMAND play fired")
-            Task { @MainActor [weak self] in self?.setPaused(false) }
+            Task { @MainActor [weak self] in
+                if SyncPlayManager.shared.handleUserSetPaused(false) { return }
+                self?.setPaused(false)
+            }
             return .success
         }
         remoteCommandTargets.append(playToken)
@@ -1140,7 +1161,10 @@ extension PlayerController {
         center.pauseCommand.isEnabled = true
         let pauseToken = center.pauseCommand.addTarget { [weak self] _ in
             Log.player.info("REMOTE_COMMAND pause fired")
-            Task { @MainActor [weak self] in self?.setPaused(true) }
+            Task { @MainActor [weak self] in
+                if SyncPlayManager.shared.handleUserSetPaused(true) { return }
+                self?.setPaused(true)
+            }
             return .success
         }
         remoteCommandTargets.append(pauseToken)

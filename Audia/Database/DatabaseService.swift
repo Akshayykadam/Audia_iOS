@@ -424,10 +424,13 @@ extension DatabaseService {
         var song: SongEntity?
     }
 
-    func fetchHistory(limit: Int = 50) async throws -> [HistoryEntry] {
+    func fetchHistory(limit: Int = 50, since: Date? = nil) async throws -> [HistoryEntry] {
         try await dbPool.read { db in
-            let events = try Event
-                .order(Column("timestamp").desc)
+            var request = Event.order(Column("timestamp").desc)
+            if let since {
+                request = request.filter(Column("timestamp") >= since)
+            }
+            let events = try request
                 .limit(limit)
                 .fetchAll(db)
 

@@ -30,7 +30,8 @@ final class HistoryView {
 
     func loadLocal() async {
         do {
-            let raw = try await db.fetchHistory(limit: 100)
+            let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date())
+            let raw = try await db.fetchHistory(limit: 200, since: cutoff)
             groupedEntries = Self.groupByDate(raw)
             WidgetBridge.shared.syncHistoryEntries(raw)
         } catch {

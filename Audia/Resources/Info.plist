@@ -70,5 +70,13 @@
 	</array>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Audia uses the local network to discover and host Listen Together sessions with nearby devices.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_audiasync._tcp</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Audia uses the camera to scan Listen Together QR codes.</string>
 </dict>
 </plist>

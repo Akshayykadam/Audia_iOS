@@ -139,18 +139,35 @@ struct FullPlayerView: View {
 
     private var topBar: some View {
         HStack {
-            Button(action: {
-                Haptics.light()
-                onCollapse()
-            }) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 40, height: 40)
-                    .contentShape(Circle())
-                    .audiaGlassCircle(isActive: false)
+            HStack(spacing: 8) {
+                Button(action: {
+                    Haptics.light()
+                    onCollapse()
+                }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
+                        .audiaGlassCircle(isActive: false)
+                }
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+
+                let isSyncActive = SyncPlayManager.shared.session != nil
+                Button {
+                    Haptics.light()
+                    SyncPlayManager.shared.isModalPresented = true
+                } label: {
+                    Image(systemName: "person.2.wave.2.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(isSyncActive ? Color.green : AudiaTheme.textPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
+                        .audiaGlassCircle(isActive: false)
+                }
+                .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+                .accessibilityLabel("Listen Together")
             }
-            .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
 
             Spacer()
 

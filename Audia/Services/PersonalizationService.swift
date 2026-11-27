@@ -147,7 +147,7 @@ actor PersonalizationService {
             var selectedIds = Set<String>()
 
             // Offer variety on pull-to-refresh while preserving artist diversity
-            for round in 0..<4 {
+            for _ in 0..<4 {
                 for artist in artistAffinities {
                     guard selectedSongs.count < target else { break }
                     let available = artist.songs.filter { !selectedIds.contains($0.id) }

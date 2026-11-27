@@ -10,6 +10,7 @@ struct ContentView: View {
     @Environment(SettingsStore.self) private var settings
     @ObservedObject private var router = AppRouter.shared
     @State private var nowPlaying = NowPlaying.shared
+    @State private var syncPlay = SyncPlayManager.shared
     @State private var selectedTab = 0
     @State private var isExpanded = false
     @State private var scrollState = MiniPlayerScrollState()
@@ -108,6 +109,38 @@ struct ContentView: View {
         }
         .simultaneousGesture(backSwipeGesture)
         .font(.satoshi(.body))
+        .overlay {
+            if syncPlay.isModalPresented {
+                ZStack {
+                    Color.black.opacity(0.45)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                                syncPlay.isModalPresented = false
+                            }
+                        }
+
+                    SyncPlayModalView()
+                        .padding(.horizontal, 18)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                }
+                .zIndex(50)
+            }
+        }
+        .animation(.spring(response: 0.34, dampingFraction: 0.86), value: syncPlay.isModalPresented)
+        .alert(
+            "Listen Together",
+            isPresented: Binding(
+                get: { syncPlay.sessionTerminationNotice != nil },
+                set: { if !$0 { syncPlay.dismissSessionTerminationNotice() } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                syncPlay.dismissSessionTerminationNotice()
+            }
+        } message: {
+            Text(syncPlay.sessionTerminationNotice ?? "")
+        }
     }
 
     private var backSwipeGesture: some Gesture {

@@ -104,6 +104,20 @@ enum DeepLinkHandler {
                 Task { await LikeStore.shared.toggle(song: song) }
             }
             return true
+        case "syncplay", "listentogether":
+            let code = url.lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if !code.isEmpty, code != "/", host == "syncplay" {
+                let serverParam = components.queryItems?.first(where: { $0.name == "server" })?.value
+                let targetServer = (serverParam?.isEmpty == false ? serverParam : nil) ?? SettingsStore.shared.syncPlayServerUrl
+                let guestName = SettingsStore.shared.syncPlayGuestName.trimmingCharacters(in: .whitespacesAndNewlines)
+                SyncPlayManager.shared.join(
+                    serverUrl: targetServer,
+                    roomCode: code,
+                    guestName: guestName.isEmpty ? "Listener" : guestName
+                )
+            }
+            SyncPlayManager.shared.isModalPresented = true
+            return true
         default:
             break
         }

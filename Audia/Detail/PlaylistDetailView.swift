@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 import GRDB
 
 // MARK: - View Model
@@ -32,13 +33,15 @@ final class PlaylistDetailViewModel {
 
     /// Fetches every playlist page from InnerTube and parses the response.
     /// Prependes "VL" to the playlistId if not already present (required by the browse endpoint).
-    func load() async {
+    func load(silent: Bool = false) async {
         if let route = autoRoute {
-            await loadAutoPlaylist(route: route)
+            await loadAutoPlaylist(route: route, silent: silent)
             return
         }
 
-        isLoading = true
+        if !silent || playlist == nil {
+            isLoading = true
+        }
         error = nil
 
         // Check if this playlist already has local cached data in SQLite
@@ -152,8 +155,10 @@ final class PlaylistDetailViewModel {
         }
     }
 
-    private func loadAutoPlaylist(route: AutoPlaylistRoute) async {
-        isLoading = true
+    private func loadAutoPlaylist(route: AutoPlaylistRoute, silent: Bool = false) async {
+        if !silent || playlist == nil {
+            isLoading = true
+        }
         error = nil
         do {
             let entities: [SongEntity]
@@ -392,6 +397,8 @@ struct PlaylistDetailView: View {
     @State private var showAddSongs = false
     @State private var showRenameAlert = false
     @State private var showDeleteAlert = false
+    @State private var showCoverPicker = false
+    @State private var selectedCoverItem: PhotosPickerItem?
     @State private var renameText = ""
     @State private var pendingRoute: DetailRoute?
     @ObservedObject private var likeStore = LikeStore.shared
@@ -415,7 +422,8 @@ struct PlaylistDetailView: View {
     }
 
     var isEditable: Bool {
-        playlistEntity?.isEditable == true && viewModel.autoRoute == nil
+        guard viewModel.autoRoute == nil, let entity = playlistEntity else { return false }
+        return entity.isEditable || entity.bookmarkedAt != nil
     }
 
     var body: some View {
@@ -458,33 +466,45 @@ struct PlaylistDetailView: View {
                 await viewModel.load()
             }
         }
+        .photosPicker(isPresented: $showCoverPicker, selection: $selectedCoverItem, matching: .images)
+        .onChange(of: selectedCoverItem) { _, newItem in
+            guard let newItem else { return }
+            selectedCoverItem = nil
+            Task { await applyCustomCover(from: newItem) }
+        }
         .task {
             await fetchEntity()
             if viewModel.autoRoute != nil || viewModel.isLoading {
                 await viewModel.load()
+                await fetchEntity()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .libraryPlaylistsUpdated)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .libraryPlaylistsUpdated)) { notification in
+            if let updatedId = notification.object as? String, updatedId != playlistId {
+                return
+            }
             Task {
                 await fetchEntity()
-                await viewModel.load()
+                await viewModel.load(silent: true)
             }
         }
         .onAppear {
             if viewModel.autoRoute == .likedSongs {
-                Task { await viewModel.load() }
+                Task { await viewModel.load(silent: true) }
             }
         }
         .onChange(of: likeStore.liked) { _, _ in
             if viewModel.autoRoute == .likedSongs {
-                Task { await viewModel.load() }
+                Task { await viewModel.load(silent: true) }
             }
         }
         .detailRouteSheet(item: $pendingRoute)
         .alert("Delete Playlist", isPresented: $showDeleteAlert) {
             Button("Delete") {
                 let targetId = playlistId.isEmpty ? (viewModel.playlist?.playlistId ?? "") : playlistId
+                let coverUrl = playlistEntity?.thumbnailUrl
                 Task {
+                    PlaylistCoverStorage.delete(urlString: coverUrl)
                     try? await DatabaseService.shared.deletePlaylist(id: targetId)
                     let auth = await InnerTubeClient.audiaShared.currentAuth()
                     if !auth.cookies.isEmpty {
@@ -516,8 +536,8 @@ struct PlaylistDetailView: View {
                     playlistId: pid,
                     newName: name
                 )
-                NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
-                await viewModel.load()
+                NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: pid)
+                await viewModel.load(silent: true)
             }
         }
         .audiaScreenBackground()
@@ -581,6 +601,9 @@ struct PlaylistDetailView: View {
                             renameText = playlist.title
                             showRenameAlert = true
                         },
+                        onChangeCover: isEditable ? {
+                            showCoverPicker = true
+                        } : nil,
                         onDelete: viewModel.autoRoute == nil ? {
                             showDeleteAlert = true
                         } : nil,
@@ -628,6 +651,64 @@ struct PlaylistDetailView: View {
         playlistEntity = try? await DatabaseService.shared.fetchOne(PlaylistEntity.self, key: playlistId)
     }
 
+    private func secondaryActionsView(for playlist: PlaylistDetailInfo) -> AnyView? {
+        let showBookmark = viewModel.autoRoute == nil && !isEditable
+        let showDownload = !playlist.songs.isEmpty
+        guard showBookmark || showDownload else { return nil }
+
+        let isSaved = playlistEntity?.bookmarkedAt != nil
+        return AnyView(
+            HStack(spacing: 10) {
+                if showBookmark {
+                    Button {
+                        Haptics.light()
+                        Task { await toggleBookmark(for: playlist) }
+                    } label: {
+                        Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                            .font(.satoshi(size: 16, weight: .semibold))
+                            .foregroundStyle(isSaved ? AudiaTheme.primary : AudiaTheme.textPrimary)
+                            .frame(width: 40, height: 40)
+                            .contentShape(Circle())
+                            .audiaGlassCircle()
+                    }
+                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
+                    .accessibilityLabel(isSaved ? "Remove from Library" : "Save to Library")
+                }
+
+                if showDownload {
+                    PlaylistDownloadAllButton(songs: playlist.songs)
+                }
+            }
+        )
+    }
+
+    private func toggleBookmark(for playlist: PlaylistDetailInfo) async {
+        guard !playlistId.isEmpty else { return }
+        let newDate: Date? = playlistEntity?.bookmarkedAt == nil ? Date() : nil
+        let pid = playlistId
+        let browseId = pid.hasPrefix("VL") ? pid : "VL\(pid)"
+        try? await DatabaseService.shared.write { db in
+            if var existing = try PlaylistEntity.fetchOne(db, key: pid) {
+                existing.bookmarkedAt = newDate
+                try existing.save(db)
+            } else {
+                let entity = PlaylistEntity(
+                    id: pid,
+                    browseId: browseId,
+                    name: playlist.title,
+                    thumbnailUrl: playlist.thumbnailUrl,
+                    isEditable: false,
+                    bookmarkedAt: newDate ?? Date(),
+                    remoteSongCount: playlist.songs.count,
+                    isAutoSync: false
+                )
+                try entity.save(db)
+            }
+        }
+        await fetchEntity()
+        NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: pid)
+    }
+
     @ViewBuilder
     private func playlistContent(for playlist: PlaylistDetailInfo) -> some View {
         LazyVStack(spacing: 0) {
@@ -670,9 +751,7 @@ struct PlaylistDetailView: View {
                     horizontalPadding: 0,
                     onPlay: { playAll(playlist) },
                     onShuffle: { shufflePlay(playlist) },
-                    secondaryActions: playlist.songs.isEmpty
-                        ? nil
-                        : AnyView(PlaylistDownloadAllButton(songs: playlist.songs))
+                    secondaryActions: secondaryActionsView(for: playlist)
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -766,35 +845,72 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private func bannerArtwork(for playlist: PlaylistDetailInfo, size: CGSize) -> some View {
-        let artworkUrl: String? = {
-            if let thumb = playlist.thumbnailUrl, !thumb.isEmpty {
-                return ArtworkURLs.sized(thumb, width: 1200, height: 1200) ?? thumb
-            }
-            if let first = playlist.songs.compactMap(\.thumbnailUrl).first(where: { !$0.isEmpty }) {
-                return ArtworkURLs.sized(first, width: 1200, height: 1200) ?? first
-            }
-            return nil
-        }()
+        if let autoRoute = viewModel.autoRoute {
+            let style: (colors: [Color], icon: String) = {
+                switch autoRoute {
+                case .likedSongs:
+                    return (
+                        [Color(red: 0.96, green: 0.24, blue: 0.45), Color(red: 0.56, green: 0.16, blue: 0.65), Color(red: 0.22, green: 0.12, blue: 0.45)],
+                        "heart.fill"
+                    )
+                case .topSongs:
+                    return (
+                        [Color(red: 0.18, green: 0.45, blue: 0.96), Color(red: 0.42, green: 0.24, blue: 0.88), Color(red: 0.14, green: 0.12, blue: 0.42)],
+                        "chart.line.uptrend.xyaxis"
+                    )
+                }
+            }()
 
-        if let artworkUrl {
-            AsyncImageView(
-                url: artworkUrl,
-                contentMode: .fill
-            )
+            ZStack {
+                LinearGradient(
+                    colors: style.colors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                RadialGradient(
+                    colors: [Color.white.opacity(0.22), Color.clear],
+                    center: .topTrailing,
+                    startRadius: 10,
+                    endRadius: size.width * 0.75
+                )
+                Image(systemName: style.icon)
+                    .font(.system(size: min(size.width, size.height) * 0.28, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
+                    .offset(y: -16)
+            }
             .frame(width: size.width, height: size.height)
-            .clipped()
         } else {
-            LinearGradient(
-                colors: [Color.orange.opacity(0.8), Color.purple.opacity(0.8)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .frame(width: size.width, height: size.height)
-            .overlay(
-                Image(systemName: "music.note.list")
-                    .font(.satoshi(size: 64))
-                    .foregroundStyle(.white.opacity(0.8))
-            )
+            let artworkUrl: String? = {
+                if let thumb = playlist.thumbnailUrl, !thumb.isEmpty {
+                    return ArtworkURLs.sized(thumb, width: 1200, height: 1200) ?? thumb
+                }
+                if let first = playlist.songs.compactMap(\.thumbnailUrl).first(where: { !$0.isEmpty }) {
+                    return ArtworkURLs.sized(first, width: 1200, height: 1200) ?? first
+                }
+                return nil
+            }()
+
+            if let artworkUrl {
+                AsyncImageView(
+                    url: artworkUrl,
+                    contentMode: .fill
+                )
+                .frame(width: size.width, height: size.height)
+                .clipped()
+            } else {
+                LinearGradient(
+                    colors: [Color.orange.opacity(0.8), Color.purple.opacity(0.8)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(width: size.width, height: size.height)
+                .overlay(
+                    Image(systemName: "music.note.list")
+                        .font(.satoshi(size: 64))
+                        .foregroundStyle(.white.opacity(0.8))
+                )
+            }
         }
     }
 
@@ -858,22 +974,16 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private func songList(for playlist: PlaylistDetailInfo) -> some View {
-        ForEach(Array(playlist.songs.enumerated()), id: \.offset) { index, song in
+        ForEach(Array(playlist.songs.enumerated()), id: \.element.videoId) { index, song in
             SongRowView(
                 song: song,
                 showDownloadButton: true,
                 onTap: { playSong(song, in: playlist) },
-                onNavigate: { pendingRoute = $0 }
+                onNavigate: { pendingRoute = $0 },
+                onRemoveFromPlaylist: isEditable ? {
+                    Task { await removeSong(song) }
+                } : nil
             )
-            .contextMenu {
-                if isEditable {
-                    Button(role: .destructive) {
-                        Task { await removeSong(song) }
-                    } label: {
-                        Label("Remove from Playlist", systemImage: "minus.circle")
-                    }
-                }
-            }
 
             if index < playlist.songs.count - 1 {
                 Divider()
@@ -894,9 +1004,44 @@ struct PlaylistDetailView: View {
             try db.execute(sql: "DELETE FROM playlist_song_map WHERE playlist_id = ? AND song_id = ?", arguments: [playlistId, song.videoId])
             let count = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM playlist_song_map WHERE playlist_id = ?", arguments: [playlistId]) ?? 0
             try db.execute(sql: "UPDATE playlist SET remote_song_count = ? WHERE id = ?", arguments: [count, playlistId])
+            if let existing = try PlaylistEntity.fetchOne(db, key: playlistId),
+               existing.browseId == nil,
+               !(existing.thumbnailUrl ?? "").hasPrefix(PlaylistCoverStorage.scheme) {
+                let nextThumb = try String.fetchOne(
+                    db,
+                    sql: """
+                        SELECT s.thumbnail_url FROM song s
+                        INNER JOIN playlist_song_map m ON m.song_id = s.id
+                        WHERE m.playlist_id = ? AND s.thumbnail_url IS NOT NULL AND s.thumbnail_url != ''
+                        ORDER BY m.position, m.id LIMIT 1
+                        """,
+                    arguments: [playlistId]
+                )
+                try db.execute(sql: "UPDATE playlist SET thumbnail_url = ? WHERE id = ?", arguments: [nextThumb, playlistId])
+            }
         }
-        NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
-        await viewModel.load()
+        NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: playlistId)
+        await fetchEntity()
+        await viewModel.load(silent: true)
+    }
+
+    private func applyCustomCover(from item: PhotosPickerItem) async {
+        guard !playlistId.isEmpty,
+              let data = try? await item.loadTransferable(type: Data.self),
+              let coverUrl = PlaylistCoverStorage.save(
+                  imageData: data,
+                  playlistId: playlistId,
+                  previousUrl: playlistEntity?.thumbnailUrl
+              ) else { return }
+        try? await DatabaseService.shared.write { db in
+            try db.execute(
+                sql: "UPDATE playlist SET thumbnail_url = ? WHERE id = ?",
+                arguments: [coverUrl, playlistId]
+            )
+        }
+        NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: playlistId)
+        await fetchEntity()
+        await viewModel.load(silent: true)
     }
 
     // MARK: - Actions
@@ -1027,7 +1172,13 @@ struct AddSongToPlaylistView: View {
         addingIds.insert(song.id)
         do {
             try await SyncBridge.mutations.addToPlaylist(playlistId: playlistId, songId: song.id)
-            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
+            try? await DatabaseService.shared.write { db in
+                try db.execute(
+                    sql: "UPDATE playlist SET bookmarked_at = ? WHERE id = ?",
+                    arguments: [Date(), playlistId]
+                )
+            }
+            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: playlistId)
             await onDone()
             dismiss()
         } catch {
@@ -1100,9 +1251,9 @@ private struct PlaylistDownloadAllButton: View {
         } label: {
             ZStack {
                 if allDownloaded {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.satoshi(size: 17, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.primary)
+                    Image(systemName: "arrow.down")
+                        .font(.satoshi(size: 16, weight: .semibold))
+                        .foregroundStyle(AudiaTheme.textSecondary.opacity(0.4))
                 } else if s.downloading {
                     Circle()
                         .stroke(Color.primary.opacity(0.16), lineWidth: 2.5)
@@ -1127,6 +1278,7 @@ private struct PlaylistDownloadAllButton: View {
             .audiaGlassCircle()
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
+        .disabled(allDownloaded)
         .accessibilityLabel(s.downloading ? "Stop downloading" : (allDownloaded ? "Playlist downloaded" : "Download all songs"))
     }
 }

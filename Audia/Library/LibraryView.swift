@@ -85,18 +85,13 @@ struct LibraryView: View {
                 }
             }
             .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showCreateDialog)
-            .onAppear {
-                Task { await loadContent() }
-            }
             .onReceive(NotificationCenter.default.publisher(for: .libraryPlaylistsUpdated)) { _ in
                 Task { await loadContent() }
             }
             .task {
                 await loadContent()
-                Task {
-                    await SyncBridge.forceFullSync()
-                    await loadContent()
-                }
+                await SyncBridge.checkAndSyncIfStale()
+                await loadContent()
             }
             .onChange(of: likeStore.liked) { _, _ in
                 Task {
@@ -587,7 +582,19 @@ struct LibraryView: View {
             )
             async let playlistsFetch = DatabaseService.shared.fetchAll(
                 PlaylistEntity.self,
-                sql: "SELECT * FROM playlist WHERE bookmarked_at IS NOT NULL ORDER BY name LIMIT 50"
+                sql: """
+                    SELECT id, browse_id, name,
+                           COALESCE(
+                               NULLIF(thumbnail_url, ''),
+                               (SELECT s.thumbnail_url FROM song s
+                                INNER JOIN playlist_song_map m ON m.song_id = s.id
+                                WHERE m.playlist_id = playlist.id
+                                  AND s.thumbnail_url IS NOT NULL AND s.thumbnail_url != ''
+                                ORDER BY m.position, m.id LIMIT 1)
+                           ) AS thumbnail_url,
+                           is_editable, bookmarked_at, remote_song_count, is_auto_sync
+                    FROM playlist WHERE bookmarked_at IS NOT NULL ORDER BY name LIMIT 50
+                    """
             )
             async let albumsFetch = DatabaseService.shared.fetchAllAlbums()
             async let podcastsFetch = DatabaseService.shared.fetchAllPodcasts()
@@ -657,6 +664,7 @@ struct LibraryView: View {
 
     private func deletePlaylist(_ playlist: PlaylistEntity) async {
         playlists.removeAll { $0.id == playlist.id }
+        PlaylistCoverStorage.delete(urlString: playlist.thumbnailUrl)
         do {
             try await DatabaseService.shared.deletePlaylist(id: playlist.id)
             let auth = await InnerTubeClient.audiaShared.currentAuth()

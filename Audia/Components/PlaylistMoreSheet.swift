@@ -10,6 +10,7 @@ import GRDB
 struct PlaylistMenuActionsView: View {
     let playlist: PlaylistDetailInfo
     var onEdit: () -> Void
+    var onChangeCover: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
     var onAddSongs: (() -> Void)? = nil
 
@@ -46,6 +47,14 @@ struct PlaylistMenuActionsView: View {
                 onEdit()
             } label: {
                 Label("Edit", systemImage: "pencil")
+            }
+
+            if let onChangeCover {
+                Button {
+                    onChangeCover()
+                } label: {
+                    Label("Change Cover", systemImage: "photo")
+                }
             }
 
             Button {

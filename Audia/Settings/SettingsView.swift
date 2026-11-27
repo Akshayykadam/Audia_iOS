@@ -131,16 +131,6 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    SettingsNavigationRow("Link Opening & Extensions", icon: "arrow.up.forward.app.fill") {
-                        SafariExtensionGuideView()
-                    }
-                } header: {
-                    sectionHeader("Link Opening")
-                } footer: {
-                    sectionFooter("Open YouTube Music links directly in Audia from Safari or the iOS Share Sheet.")
-                }
-
-                Section {
                     SettingsPickerRow("Audio Quality", icon: "waveform", selection: $settings.audioQuality)
                     SettingsToggleRow("Audio Normalization", icon: "speaker.wave.2", isOn: $settings.audioNormalization)
                     SettingsToggleRow("Gapless Playback", icon: "arrow.right.arrow.left", isOn: $settings.gaplessPlayback)
@@ -155,14 +145,6 @@ struct SettingsView: View {
                     sectionHeader("Queue")
                 } footer: {
                     sectionFooter("Persist Queue restores your queue, shuffle, and repeat state when the app relaunches.")
-                }
-
-                Section {
-                    SettingsToggleRow("Swipe Artwork to Skip", icon: "hand.draw", isOn: $settings.artworkSwipeNavigation)
-                } header: {
-                    sectionHeader("Gestures")
-                } footer: {
-                    sectionFooter("Swipe left or right on the artwork in the full player to play the next or previous song.")
                 }
 
                 Section {
@@ -203,6 +185,16 @@ struct SettingsView: View {
                     sectionFooter("Auto-download saves liked songs for offline playback. Wi-Fi Only blocks downloads on cellular data.")
                 }
                 .id("downloads")
+
+                Section {
+                    SettingsNavigationRow("Link Opening & Extensions", icon: "arrow.up.forward.app.fill") {
+                        SafariExtensionGuideView()
+                    }
+                } header: {
+                    sectionHeader("Link Opening")
+                } footer: {
+                    sectionFooter("Open YouTube Music links directly in Audia from Safari or the iOS Share Sheet.")
+                }
             }
             .scrollContentBackground(.hidden)
             .contentMargins(.top, 56, for: .scrollContent)

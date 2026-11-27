@@ -298,6 +298,10 @@ final class NowPlaying {
     }
 
     func playNext(automatic: Bool = false) {
+        if !automatic && !SyncPlayManager.shared.isApplyingRemoteCommand,
+           SyncPlayManager.shared.handleUserSkipNext() {
+            return
+        }
         guard hasNext else { return }
         guard !isResolvingNext else { return }
         if !automatic { lastManualSkipTime = Date() }
@@ -311,6 +315,10 @@ final class NowPlaying {
     }
 
     func playPrevious() {
+        if !SyncPlayManager.shared.isApplyingRemoteCommand,
+           SyncPlayManager.shared.handleUserSkipPrevious() {
+            return
+        }
         if currentTime > 3.0 {
             PlayerController.shared.seek(to: 0)
             return
@@ -382,6 +390,7 @@ final class NowPlaying {
         preloadNextTrack()
         WidgetBridge.shared.syncPlayback(from: self)
         PlayerController.shared.setNowPlayingMetadata()
+        SyncPlayManager.shared.onHostTrackChanged()
     }
 
     /// Convenience pushing a `SongItem`'s metadata into the player state.
@@ -446,6 +455,13 @@ final class NowPlaying {
         if let finishedId = videoId,
            duration >= 600 || musicVideoType == "MUSIC_VIDEO_TYPE_PODCAST_EPISODE" {
             Task { await EpisodePlaybackStore.shared.markPlayed(videoId: finishedId) }
+        }
+        if SyncPlayManager.shared.session != nil && !SyncPlayManager.shared.isHost {
+            // Guest waits for host's next track instead of advancing/autoplaying locally.
+            isPlaying = false
+            stopTimer()
+            PlayerController.shared.updateNowPlayingProgress()
+            return
         }
         if playbackMode == .repeatOne {
             repeatCurrent()

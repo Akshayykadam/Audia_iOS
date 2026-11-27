@@ -58,21 +58,34 @@ struct AsyncImageView: View {
             loadedImage = nil
             return
         }
+        let resolvedURL: URL?
+        if urlString.hasPrefix("localcover://") {
+            let filename = String(urlString.dropFirst("localcover://".count))
+            resolvedURL = PlaylistCoverStorage.url(for: filename)
+        } else {
+            let scale = displayScale
+            // Prevent zero-size layout passes from causing degenerate image cache requests.
+            let minPixels: CGFloat = 120 * scale
+            let displaySize = CGSize(
+                width: max(targetSize.width * scale, minPixels),
+                height: max(targetSize.height * scale, minPixels)
+            )
+            // Request the ladder rung covering this surface (BitChord-style),
+            // so rows, cards and headers each share one cache entry.
+            let rung = ArtworkURLs.rung(for: max(displaySize.width, displaySize.height))
+            let normalized = normalizeThumbnailURL(urlString, pixels: rung)
+            resolvedURL = URL(string: normalized)
+        }
+        guard let url = resolvedURL else {
+            loadedImage = nil
+            return
+        }
         let scale = displayScale
-        // Prevent zero-size layout passes from causing degenerate image cache requests.
         let minPixels: CGFloat = 120 * scale
         let displaySize = CGSize(
             width: max(targetSize.width * scale, minPixels),
             height: max(targetSize.height * scale, minPixels)
         )
-        // Request the ladder rung covering this surface (BitChord-style),
-        // so rows, cards and headers each share one cache entry.
-        let rung = ArtworkURLs.rung(for: max(displaySize.width, displaySize.height))
-        let normalized = normalizeThumbnailURL(urlString, pixels: rung)
-        guard let url = URL(string: normalized) else {
-            loadedImage = nil
-            return
-        }
         let request: ImageRequest
         if contentMode == .fill {
             request = ImageRequest(
@@ -101,6 +114,59 @@ struct AsyncImageView: View {
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemGray6))
+    }
+}
+
+enum PlaylistCoverStorage {
+    static let scheme = "localcover://"
+
+    static var directory: URL? {
+        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let dir = base.appendingPathComponent("PlaylistCovers", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    static func url(for filename: String) -> URL? {
+        directory?.appendingPathComponent(filename)
+    }
+
+    static func save(imageData: Data, playlistId: String, previousUrl: String?) -> String? {
+        guard let dir = directory, let image = UIImage(data: imageData) else { return nil }
+        // Downscale very large photos to max 1200px on longest edge
+        let maxDim: CGFloat = 1200
+        let size = image.size
+        let scaled: UIImage
+        if max(size.width, size.height) > maxDim {
+            let ratio = maxDim / max(size.width, size.height)
+            let target = CGSize(width: size.width * ratio, height: size.height * ratio)
+            let renderer = UIGraphicsImageRenderer(size: target)
+            scaled = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: target)) }
+        } else {
+            scaled = image
+        }
+        guard let jpeg = scaled.jpegData(compressionQuality: 0.88) else { return nil }
+
+        if let prev = previousUrl {
+            delete(urlString: prev)
+        }
+
+        let filename = "\(playlistId)_\(UUID().uuidString.prefix(8)).jpg"
+        let fileURL = dir.appendingPathComponent(filename)
+        do {
+            try jpeg.write(to: fileURL, options: .atomic)
+            return "\(scheme)\(filename)"
+        } catch {
+            return nil
+        }
+    }
+
+    static func delete(urlString: String?) {
+        guard let urlString, urlString.hasPrefix(scheme), let dir = directory else { return }
+        let filename = String(urlString.dropFirst(scheme.count))
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent(filename))
     }
 }
 

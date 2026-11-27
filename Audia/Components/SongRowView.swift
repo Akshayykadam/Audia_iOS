@@ -25,9 +25,9 @@ struct MoreButton: View {
 /// Unified song actions menu content for popup Menu and contextMenu.
 struct SongMenuActionsView: View {
     let song: SongItem
-    var pin: PinState = PinState()
     var onNavigate: ((DetailRoute) -> Void)?
     var onAddToPlaylist: () -> Void
+    var onRemoveFromPlaylist: (() -> Void)? = nil
 
     @ObservedObject private var likeStore = LikeStore.shared
     @ObservedObject private var downloadManager = DownloadManager.shared
@@ -74,6 +74,14 @@ struct SongMenuActionsView: View {
                 onAddToPlaylist()
             } label: {
                 Label("Add to Playlist", systemImage: "plus.square.on.square")
+            }
+
+            if let onRemoveFromPlaylist {
+                Button(role: .destructive) {
+                    onRemoveFromPlaylist()
+                } label: {
+                    Label("Remove from Playlist", systemImage: "minus.circle")
+                }
             }
 
             downloadButton
@@ -186,10 +194,10 @@ struct SongRowView: View {
     var showDownloadButton: Bool = false
     var onTap: () -> Void
     var onNavigate: ((DetailRoute) -> Void)?
+    var onRemoveFromPlaylist: (() -> Void)? = nil
 
     @State private var durations = DurationResolver()
     @State private var showPlaylistPicker = false
-    @State private var pin = PinState()
 
     var body: some View {
         HStack(spacing: 14) {
@@ -218,13 +226,13 @@ struct SongRowView: View {
             Menu {
                 SongMenuActionsView(
                     song: song,
-                    pin: pin,
                     onNavigate: onNavigate,
                     onAddToPlaylist: {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             showPlaylistPicker = true
                         }
-                    }
+                    },
+                    onRemoveFromPlaylist: onRemoveFromPlaylist
                 )
             } label: {
                 Image(systemName: "ellipsis")
@@ -247,21 +255,22 @@ struct SongRowView: View {
         .contextMenu {
             SongMenuActionsView(
                 song: song,
-                pin: pin,
                 onNavigate: onNavigate,
                 onAddToPlaylist: {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         showPlaylistPicker = true
                     }
-                }
+                },
+                onRemoveFromPlaylist: onRemoveFromPlaylist
             )
         }
         .sheet(isPresented: $showPlaylistPicker) {
             AddSongToPlaylistSheet(song: song)
         }
-        .task {
-            await durations.resolve(videoId: song.videoId, knownDuration: song.duration)
-            await pin.load(videoId: song.videoId)
+        .task(id: song.videoId) {
+            if song.duration <= 0 {
+                await durations.resolve(videoId: song.videoId, knownDuration: song.duration)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .durationDidUpdate)) { notification in
             durations.handleUpdate(notification, videoId: song.videoId)
@@ -276,8 +285,8 @@ struct DownloadCellProgressView: View {
 
     var body: some View {
         let state = downloadManager.state(for: song.videoId)
-        return GeometryReader { geo in
-            if case .downloading(let fraction) = state {
+        if case .downloading(let fraction) = state {
+            GeometryReader { geo in
                 Color.accentColor.opacity(0.25)
                     .frame(
                         width: geo.size.width * CGFloat(min(max(fraction, 0), 1)),
@@ -285,8 +294,8 @@ struct DownloadCellProgressView: View {
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .animation(.easeInOut(duration: 0.3), value: state)
         }
-        .animation(.easeInOut(duration: 0.3), value: state)
     }
 }
 
@@ -311,9 +320,9 @@ struct SongDownloadButton: View {
             ZStack {
                 switch state {
                 case .completed:
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.satoshi(size: 18, weight: .semibold))
-                        .foregroundStyle(AudiaTheme.primary)
+                    Image(systemName: "arrow.down.circle")
+                        .font(.satoshi(size: 18, weight: .medium))
+                        .foregroundStyle(AudiaTheme.textSecondary.opacity(0.35))
                 case .downloading(let fraction):
                     ZStack {
                         Circle()

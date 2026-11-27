@@ -69,6 +69,22 @@ struct PlayerMenuSheet: View {
                         )
                     }
                     .buttonStyle(.plain)
+
+                    Divider()
+
+                    // 5. Listen Together
+                    MenuRow(
+                        icon: "person.2.wave.2.fill",
+                        title: "Listen Together",
+                        subtitle: SyncPlayManager.shared.session != nil
+                            ? "Active session (\(SyncPlayManager.shared.participants.count) listening)"
+                            : "Sync music with friends"
+                    ) {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            SyncPlayManager.shared.isModalPresented = true
+                        }
+                    }
                 }
 
                 // Music volume slider at the bottom
@@ -420,17 +436,18 @@ struct AddSongToPlaylistSheet: View {
             HStack(spacing: 10) {
                 Button {
                     Haptics.light()
-                    dismiss()
+                    newPlaylistTitle = ""
+                    showNewPlaylistAlert = true
                 } label: {
-                    Image(systemName: "xmark")
-                        .font(.satoshi(size: 15, weight: .semibold))
+                    Image(systemName: "plus")
+                        .font(.satoshi(size: 17, weight: .semibold))
                         .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 40, height: 40)
                         .contentShape(Circle())
                         .audiaGlassCircle()
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
-                .accessibilityLabel("Done")
+                .accessibilityLabel("New playlist")
 
                 Spacer()
 
@@ -445,18 +462,17 @@ struct AddSongToPlaylistSheet: View {
 
                 Button {
                     Haptics.light()
-                    newPlaylistTitle = ""
-                    showNewPlaylistAlert = true
+                    dismiss()
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.satoshi(size: 17, weight: .semibold))
+                    Image(systemName: "xmark")
+                        .font(.satoshi(size: 15, weight: .semibold))
                         .foregroundStyle(AudiaTheme.textPrimary)
                         .frame(width: 40, height: 40)
                         .contentShape(Circle())
                         .audiaGlassCircle()
                 }
                 .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
-                .accessibilityLabel("New playlist")
+                .accessibilityLabel("Done")
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
@@ -531,6 +547,7 @@ struct AddSongToPlaylistSheet: View {
 
     private func addTo(_ playlist: PlaylistEntity) {
         guard !addedTo.contains(playlist.id) else { return }
+        addedTo.insert(playlist.id)
         Task {
             do {
                 try? await DatabaseService.shared.write { db in
@@ -545,10 +562,14 @@ struct AddSongToPlaylistSheet: View {
                         thumbnailUrl: song.thumbnailUrl
                     )
                     try entity.save(db)
+                    try db.execute(
+                        sql: "UPDATE playlist SET bookmarked_at = ? WHERE id = ?",
+                        arguments: [Date(), playlist.id]
+                    )
                 }
                 try await SyncBridge.mutations.addToPlaylist(playlistId: playlist.id, songId: song.videoId)
-                NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
-                addedTo.insert(playlist.id)
+                NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: playlist.id)
+                dismiss()
             } catch {
                 addedTo.remove(playlist.id)
             }
@@ -566,7 +587,7 @@ struct AddSongToPlaylistSheet: View {
                 id: playlistId,
                 browseId: nil,
                 name: title,
-                thumbnailUrl: nil,
+                thumbnailUrl: song.thumbnailUrl,
                 isEditable: true,
                 bookmarkedAt: Date(),
                 remoteSongCount: 0,
@@ -587,10 +608,10 @@ struct AddSongToPlaylistSheet: View {
                 try songEntity.save(db)
             }
             try await SyncBridge.mutations.addToPlaylist(playlistId: playlistId, songId: song.videoId)
-            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: nil)
-            await loadPlaylists()
+            NotificationCenter.default.post(name: .libraryPlaylistsUpdated, object: playlistId)
             addedTo.insert(playlistId)
             newPlaylistTitle = ""
+            dismiss()
         } catch {
             Log.sync.error("Failed to create and add to playlist: \(error)")
         }
