@@ -43,25 +43,6 @@ struct ContentView: View {
                         } label: {
                             Image(systemName: "music.note.list")
                         }
-
-                        Tab(value: 1, role: .search) {
-                            SearchView()
-                                .toolbarVisibility(router.isAtRootTab ? .visible : .hidden, for: .tabBar)
-                        }
-                    }
-                    .tabBarMinimizeBehavior(.onScrollDown)
-                    .tabViewBottomAccessory(isEnabled: nowPlaying.isBarPresented && router.isAtRootTab) {
-                        MiniPlayerAccessoryWrapper(appColorScheme: colorScheme) {
-                            UIApplication.shared.sendAction(
-                                #selector(UIResponder.resignFirstResponder),
-                                to: nil,
-                                from: nil,
-                                for: nil
-                            )
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                                isExpanded = true
-                            }
-                        }
                     }
                     .tint(settings.accentName == AccentPreset.all.first?.name ? (colorScheme == .dark ? Color.white : Color(red: 0.06, green: 0.06, blue: 0.06)) : settings.accentColor)
                     .background(TabBarSmoothTransitionInstaller())
@@ -87,10 +68,10 @@ struct ContentView: View {
                     .background(AudiaTheme.background.ignoresSafeArea())
                 }
 
-                // Floating Mini Player on detail pages (or on iOS < 26)
+                // Floating 72pt Mini Player above the tab bar (and on detail pages)
                 VStack(spacing: 8) {
-                    if nowPlaying.isBarPresented && !router.isAtRootTab {
-                        MiniPlayerBarView(onExpand: {
+                    if nowPlaying.isBarPresented {
+                        MiniPlayerBarView(overrideColorScheme: colorScheme, onExpand: {
                             UIApplication.shared.sendAction(
                                 #selector(UIResponder.resignFirstResponder),
                                 to: nil,
@@ -105,21 +86,6 @@ struct ContentView: View {
                     }
 
                     if #unavailable(iOS 26.0) {
-                        if nowPlaying.isBarPresented && router.isAtRootTab {
-                            MiniPlayerBarView(onExpand: {
-                                UIApplication.shared.sendAction(
-                                    #selector(UIResponder.resignFirstResponder),
-                                    to: nil,
-                                    from: nil,
-                                    for: nil
-                                )
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                                    isExpanded = true
-                                }
-                            })
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
-
                         if router.isAtRootTab {
                             AudiaSolidTabBar(selectedTab: $selectedTab)
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -128,6 +94,9 @@ struct ContentView: View {
                 }
                 .padding(.bottom, {
                     if #available(iOS 26.0, *) {
+                        if router.isAtRootTab {
+                            return bottomInset > 0 ? bottomInset + 64 : 74
+                        }
                         return bottomInset > 0 ? bottomInset + 6 : 14
                     } else {
                         let controlsBottomPadding: CGFloat = bottomInset > 0 ? 18 : 10

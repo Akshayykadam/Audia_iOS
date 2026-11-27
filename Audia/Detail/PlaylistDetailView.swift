@@ -747,21 +747,25 @@ struct PlaylistDetailView: View {
                         .lineLimit(3)
                 }
 
-                PlaybackControlsView(
-                    horizontalPadding: 0,
-                    onPlay: { playAll(playlist) },
-                    onShuffle: { shufflePlay(playlist) },
-                    secondaryActions: secondaryActionsView(for: playlist)
-                )
+                HStack(alignment: .center, spacing: 8) {
+                    PlaybackControlsView(
+                        compactPlay: viewModel.autoRoute != nil,
+                        horizontalPadding: 0,
+                        onPlay: { playAll(playlist) },
+                        onShuffle: { shufflePlay(playlist) },
+                        secondaryActions: secondaryActionsView(for: playlist)
+                    )
+
+                    if viewModel.autoRoute != nil {
+                        Spacer(minLength: 0)
+                        sortControls
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, horizontalSizeClass == .regular ? 32 : DesignTokens.screenHPadding)
             .padding(.top, 8)
             .padding(.bottom, 16)
-
-            if viewModel.autoRoute != nil {
-                sortControls
-            }
 
             if playlist.songs.isEmpty {
                 VStack(spacing: 8) {
@@ -935,41 +939,38 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private var sortControls: some View {
-        HStack {
-            Spacer()
-            switch viewModel.autoRoute {
-            case .likedSongs:
-                Picker("Sort", selection: Binding(
-                    get: { viewModel.autoSongSort },
-                    set: { viewModel.autoSongSort = $0 }
-                )) {
-                    ForEach(LibrarySongSort.allCases) { sort in
-                        Text(sort.displayName).tag(sort)
-                    }
+        switch viewModel.autoRoute {
+        case .likedSongs:
+            Picker("Sort", selection: Binding(
+                get: { viewModel.autoSongSort },
+                set: { viewModel.autoSongSort = $0 }
+            )) {
+                ForEach(LibrarySongSort.allCases) { sort in
+                    Text(sort.displayName).tag(sort)
                 }
-                .pickerStyle(.menu)
-                .onChange(of: viewModel.autoSongSort) {
-                    Task { await viewModel.load() }
-                }
-            case .topSongs:
-                Picker("Period", selection: Binding(
-                    get: { viewModel.autoTopPeriod },
-                    set: { viewModel.autoTopPeriod = $0 }
-                )) {
-                    ForEach(TopPeriod.allCases) { period in
-                        Text(period.displayName).tag(period)
-                    }
-                }
-                .pickerStyle(.menu)
-                .onChange(of: viewModel.autoTopPeriod) {
-                    Task { await viewModel.load() }
-                }
-            case nil:
-                EmptyView()
             }
+            .pickerStyle(.menu)
+            .fixedSize()
+            .onChange(of: viewModel.autoSongSort) {
+                Task { await viewModel.load() }
+            }
+        case .topSongs:
+            Picker("Period", selection: Binding(
+                get: { viewModel.autoTopPeriod },
+                set: { viewModel.autoTopPeriod = $0 }
+            )) {
+                ForEach(TopPeriod.allCases) { period in
+                    Text(period.displayName).tag(period)
+                }
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
+            .onChange(of: viewModel.autoTopPeriod) {
+                Task { await viewModel.load() }
+            }
+        case nil:
+            EmptyView()
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
     }
 
     @ViewBuilder

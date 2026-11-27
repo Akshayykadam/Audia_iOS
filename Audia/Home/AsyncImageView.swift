@@ -17,8 +17,14 @@ struct AsyncImageView: View {
         self.url = url
         self.contentMode = contentMode
         self.targetSize = targetSize
-        if let urlString = url, let u = URL(string: urlString), let cached = ArtworkLoader.cachedImage(for: u) {
-            _loadedImage = State(initialValue: cached)
+        if let urlString = url, !urlString.hasPrefix("localcover://") {
+            let preferred = normalizeThumbnailURL(urlString, pixels: 720)
+            let hiRes = normalizeThumbnailURL(urlString, pixels: 1200)
+            if let u1200 = URL(string: hiRes), let cached = ArtworkLoader.cachedImage(for: u1200) {
+                _loadedImage = State(initialValue: cached)
+            } else if let u720 = URL(string: preferred), let cached = ArtworkLoader.cachedImage(for: u720) {
+                _loadedImage = State(initialValue: cached)
+            }
         }
     }
 
@@ -62,19 +68,13 @@ struct AsyncImageView: View {
             loadedImage = nil
             return
         }
-        let scale = max(displayScale, 2.0)
-        let minPixels: CGFloat = 180 * scale
-        let displaySize = CGSize(
-            width: max(targetSize.width * scale, minPixels),
-            height: max(targetSize.height * scale, minPixels)
-        )
+        let maxPt = max(targetSize.width, targetSize.height)
         let resolvedURL: URL?
         if urlString.hasPrefix("localcover://") {
             let filename = String(urlString.dropFirst("localcover://".count))
             resolvedURL = PlaylistCoverStorage.url(for: filename)
         } else {
-            let maxPt = max(targetSize.width, targetSize.height)
-            let rung = maxPt > 200 ? 1200 : max(ArtworkURLs.rung(for: max(displaySize.width, displaySize.height)), 544)
+            let rung = maxPt > 160 ? 1200 : 720
             let normalized = normalizeThumbnailURL(urlString, pixels: rung)
             resolvedURL = URL(string: normalized)
         }
@@ -82,15 +82,7 @@ struct AsyncImageView: View {
             loadedImage = nil
             return
         }
-        let request: ImageRequest
-        if contentMode == .fill {
-            request = ImageRequest(
-                url: url,
-                processors: [.resize(size: displaySize, unit: .pixels, contentMode: .aspectFill)]
-            )
-        } else {
-            request = ImageRequest(url: url)
-        }
+        let request = ImageRequest(url: url)
         do {
             let image = try await ImagePipeline.shared.image(for: request)
             guard !Task.isCancelled else { return }
@@ -189,11 +181,15 @@ private func normalizeThumbnailURL(_ urlString: String, pixels: Int) -> String {
         }
     }
 
-    if url.contains("i.ytimg.com") {
+    if url.contains("i.ytimg.com/vi/") {
+        let base = url.split(separator: "?").first.map(String.init) ?? url
         let targetFile = pixels >= 800 ? "sddefault.jpg" : "hqdefault.jpg"
-        for lowRes in ["default.jpg", "mqdefault.jpg"] {
-            if url.hasSuffix("/\(lowRes)") {
-                url = url.replacingOccurrences(of: "/\(lowRes)", with: "/\(targetFile)")
+        let lowResVariants = pixels >= 800
+            ? ["default.jpg", "mqdefault.jpg", "hqdefault.jpg"]
+            : ["default.jpg", "mqdefault.jpg"]
+        for lowRes in lowResVariants {
+            if base.hasSuffix("/\(lowRes)") {
+                url = base.replacingOccurrences(of: "/\(lowRes)", with: "/\(targetFile)")
                 break
             }
         }

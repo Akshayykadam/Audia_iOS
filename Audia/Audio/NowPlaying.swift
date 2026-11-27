@@ -134,7 +134,9 @@ final class NowPlaying {
     private static let playbackModeKey = "nowPlaying.playbackMode"
 
     private init() {
-        restoreQueueIfNeeded()
+        Task { @MainActor in
+            self.restoreQueueIfNeeded()
+        }
     }
 
     deinit {
@@ -169,7 +171,9 @@ final class NowPlaying {
         }
         queueIndex = max(0, queueIndex)
         if songs.indices.contains(queueIndex) {
-            update(with: songs[queueIndex])
+            update(with: songs[queueIndex], preloadNext: false)
+            isPlaying = false
+            stopTimer()
         }
     }
 
@@ -364,7 +368,7 @@ final class NowPlaying {
         }
     }
 
-    func update(title: String, artist: String?, videoId: String, album: String? = nil, artists: [YTArtist] = [], thumbnailUrl: String? = nil, duration: TimeInterval? = nil) {
+    func update(title: String, artist: String?, videoId: String, album: String? = nil, artists: [YTArtist] = [], thumbnailUrl: String? = nil, duration: TimeInterval? = nil, preloadNext: Bool = true) {
         var cleanedArtist = cleanArtistDisplay(artist ?? "")
         let (cleanedTitle, extractedArtist) = cleanTitleAndExtractArtist(title, fallbackArtist: cleanedArtist)
         if cleanedArtist.isEmpty, let extractedArtist, !extractedArtist.isEmpty {
@@ -387,14 +391,16 @@ final class NowPlaying {
         self.isVideoReady = false
         startTimer()
         loadThumbnail(videoId: videoId, thumbnailUrl: thumbnailUrl)
-        preloadNextTrack()
+        if preloadNext {
+            preloadNextTrack()
+        }
         WidgetBridge.shared.syncPlayback(from: self)
         PlayerController.shared.setNowPlayingMetadata()
         SyncPlayManager.shared.onHostTrackChanged()
     }
 
     /// Convenience pushing a `SongItem`'s metadata into the player state.
-    func update(with song: SongItem) {
+    func update(with song: SongItem, preloadNext: Bool = true) {
         update(
             title: song.title,
             artist: song.artists.map(\.name).joined(separator: ", "),
@@ -402,7 +408,8 @@ final class NowPlaying {
             album: song.album,
             artists: song.artists,
             thumbnailUrl: song.thumbnailUrl,
-            duration: Double(song.duration)
+            duration: Double(song.duration),
+            preloadNext: preloadNext
         )
     }
 
@@ -566,14 +573,14 @@ final class NowPlaying {
         Task {
             // For downloaded songs, try to extract embedded artwork from the local file first.
             if let localURL = await DownloadManager.shared.localURL(for: videoId) {
-                loadArtworkFromLocalFile(localURL, videoId: videoId)
+                loadArtworkFromLocalFile(localURL, videoId: videoId, thumbnailUrl: thumb)
                 return
             }
             loadThumbnailFromCDN(videoId: videoId, thumbnailUrl: thumb)
         }
     }
 
-    private func loadArtworkFromLocalFile(_ fileURL: URL, videoId: String) {
+    private func loadArtworkFromLocalFile(_ fileURL: URL, videoId: String, thumbnailUrl: String?) {
         Task {
             let asset = AVURLAsset(url: fileURL)
             let metadata = try? await asset.load(.metadata)
@@ -592,8 +599,14 @@ final class NowPlaying {
                 guard lastLoadedVideoId == videoId else { return }
                 if let artworkImage {
                     publishArtwork(artworkImage)
+                    let pxWidth = artworkImage.size.width * artworkImage.scale
+                    let pxHeight = artworkImage.size.height * artworkImage.scale
+                    // Older downloads embedded low-res thumbnails; upgrade from CDN if online.
+                    if min(pxWidth, pxHeight) < 500 {
+                        loadThumbnailFromCDN(videoId: videoId, thumbnailUrl: thumbnailUrl, keepExistingOnMiss: true)
+                    }
                 } else {
-                    loadThumbnailFromCDN(videoId: videoId)
+                    loadThumbnailFromCDN(videoId: videoId, thumbnailUrl: thumbnailUrl)
                 }
             }
         }
@@ -612,7 +625,7 @@ final class NowPlaying {
         }
     }
 
-    private func loadThumbnailFromCDN(videoId: String, thumbnailUrl: String? = nil) {
+    private func loadThumbnailFromCDN(videoId: String, thumbnailUrl: String? = nil, keepExistingOnMiss: Bool = false) {
         // Best source first: the track's own artwork upgraded to full
         // resolution, then ytimg step-downs, then the guaranteed hqdefault.
         var candidates: [String] = []
@@ -655,7 +668,7 @@ final class NowPlaying {
         if fetchCount == 0 {
             return
         }
-        if paintedIndex == nil {
+        if paintedIndex == nil && !keepExistingOnMiss {
             thumbnailImage = nil
         }
         Task {
@@ -685,7 +698,9 @@ final class NowPlaying {
 
     private func preloadNextTrack() {
         guard hasNext else { return }
-        let nextId = queueSongs[queueIndex + 1].videoId
+        let nextIndex = queueIndex + 1 < queueSongs.count ? queueIndex + 1 : 0
+        guard queueSongs.indices.contains(nextIndex) else { return }
+        let nextId = queueSongs[nextIndex].videoId
         loggedTask(Log.nowPlaying, "Pre-resolve failed") {
             _ = try await PlaybackManager.shared.resolve(videoId: nextId)
             Log.nowPlaying.debug("Pre-resolved next track: \(nextId)")

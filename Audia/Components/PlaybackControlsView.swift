@@ -12,6 +12,7 @@ struct PlaybackControlsView: View {
     var accent: Color = .accentColor
     var showsShuffle: Bool = true
     var showsMore: Bool = false
+    var compactPlay: Bool = false
     var horizontalPadding: CGFloat = 16
     var onPlay: () -> Void
     var onShuffle: () -> Void = {}
@@ -25,17 +26,27 @@ struct PlaybackControlsView: View {
                 Haptics.light()
                 onPlay()
             } label: {
-                HStack(spacing: 6) {
+                if compactPlay {
                     Image(systemName: "play.fill")
-                        .font(.satoshi(size: 14, weight: .bold))
-                    Text("Play")
                         .font(.satoshi(size: 15, weight: .bold))
+                        .foregroundStyle(AudiaTheme.textPrimary)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Circle())
+                        .audiaGlassCircle()
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: "play.fill")
+                            .font(.satoshi(size: 14, weight: .bold))
+                        Text("Play")
+                            .font(.satoshi(size: 15, weight: .bold))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .padding(.horizontal, 20)
+                    .frame(height: 40)
+                    .contentShape(Capsule())
+                    .audiaGlassCapsule()
                 }
-                .foregroundStyle(AudiaTheme.textPrimary)
-                .padding(.horizontal, 20)
-                .frame(height: 40)
-                .contentShape(Capsule())
-                .audiaGlassCapsule()
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.94))
             .accessibilityLabel("Play all")

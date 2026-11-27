@@ -7,8 +7,10 @@ import SwiftUI
 
 struct SyncPlayModalView: View {
     @Environment(SettingsStore.self) private var settings
+    @Environment(\.colorScheme) private var colorScheme
 
     private let syncPlay = SyncPlayManager.shared
+    @Namespace private var tabNamespace
 
     @State private var selectedTab: ModalTab = .host
     @State private var hostMode: HostMode = .cloud
@@ -17,6 +19,17 @@ struct SyncPlayModalView: View {
     @State private var isEditingName = false
     @State private var showQRScanner = false
     @State private var copiedCode = false
+
+    private var effectiveAccent: Color {
+        settings.accentName == AccentPreset.all.first?.name ? AudiaTheme.primary : settings.accentColor
+    }
+
+    private var ctaForeground: Color {
+        if settings.accentName == AccentPreset.all.first?.name {
+            return colorScheme == .dark ? .black : .white
+        }
+        return .white
+    }
 
     enum ModalTab: String, CaseIterable, Identifiable {
         case host = "Host"
@@ -88,7 +101,7 @@ struct SyncPlayModalView: View {
         HStack(spacing: 10) {
             Image(systemName: "person.2.wave.2.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(settings.accentColor)
+                .foregroundStyle(effectiveAccent)
 
             Text("Listen Together")
                 .font(.satoshi(.headline, weight: .bold))
@@ -110,10 +123,10 @@ struct SyncPlayModalView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AudiaTheme.textSecondary)
-                    .frame(width: 28, height: 28)
-                    .background(Color.primary.opacity(0.08))
-                    .clipShape(Circle())
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Circle())
+                    .audiaGlassCircle()
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
             .accessibilityLabel("Close")
@@ -141,12 +154,34 @@ struct SyncPlayModalView: View {
         }
 
         // Top Segmented Tabs (Host | Join)
-        Picker("", selection: $selectedTab) {
+        HStack(spacing: 4) {
             ForEach(ModalTab.allCases) { tab in
-                Text(tab.rawValue).tag(tab)
+                let isSelected = selectedTab == tab
+                Button {
+                    Haptics.selection()
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    Text(tab.rawValue)
+                        .font(.satoshi(.subheadline, weight: isSelected ? .bold : .semibold))
+                        .foregroundStyle(isSelected ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background {
+                            if isSelected {
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.14))
+                                    .matchedGeometryEffect(id: "syncTabIndicator", in: tabNamespace)
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
         }
-        .pickerStyle(.segmented)
+        .padding(4)
+        .audiaGlassCapsule(isInteractive: false)
 
         // Compact Name Pill or Inline Editor
         nameRow
@@ -227,7 +262,7 @@ struct SyncPlayModalView: View {
                 ForEach(HostMode.allCases) { mode in
                     let isSelected = hostMode == mode
                     Button {
-                        Haptics.light()
+                        Haptics.selection()
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                             hostMode = mode
                         }
@@ -235,26 +270,37 @@ struct SyncPlayModalView: View {
                         HStack(spacing: 6) {
                             Image(systemName: mode.icon)
                                 .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(isSelected ? effectiveAccent : AudiaTheme.textSecondary)
                             Text(mode.rawValue)
                                 .font(.satoshi(.caption, weight: .semibold))
+                                .foregroundStyle(isSelected ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
                         }
-                        .foregroundStyle(isSelected ? AudiaTheme.textPrimary : AudiaTheme.textSecondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(isSelected ? Color.primary.opacity(0.14) : Color.primary.opacity(0.05))
+                        .padding(.vertical, 10)
+                        .background(isSelected ? effectiveAccent.opacity(0.16) : Color.primary.opacity(0.05))
                         .overlay(
                             Capsule()
-                                .stroke(isSelected ? Color.primary.opacity(0.24) : Color.clear, lineWidth: 1)
+                                .stroke(isSelected ? effectiveAccent.opacity(0.42) : Color.primary.opacity(0.08), lineWidth: 1)
                         )
                         .clipShape(Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.96))
                 }
             }
 
-            Toggle("Guest controls", isOn: $guestControlAllowed)
-                .font(.satoshi(.subheadline))
-                .tint(settings.accentColor)
+            HStack {
+                Text("Guest controls")
+                    .font(.satoshi(.subheadline, weight: .medium))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                Spacer()
+                Toggle("", isOn: $guestControlAllowed)
+                    .labelsHidden()
+                    .toggleStyle(.amoled)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.primary.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Button {
                 Haptics.medium()
@@ -274,17 +320,16 @@ struct SyncPlayModalView: View {
                 HStack(spacing: 8) {
                     if isConnecting {
                         ProgressView()
-                            .tint(AudiaTheme.textPrimary)
+                            .tint(ctaForeground)
                             .scaleEffect(0.85)
                     }
                     Text(isConnecting ? "Starting..." : "Start Session")
                         .font(.satoshi(.subheadline, weight: .bold))
                 }
-                .foregroundStyle(AudiaTheme.textPrimary)
+                .foregroundStyle(ctaForeground)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(settings.accentColor.opacity(0.22))
-                .overlay(Capsule().stroke(settings.accentColor.opacity(0.45), lineWidth: 1))
+                .padding(.vertical, 12)
+                .background(effectiveAccent)
                 .clipShape(Capsule())
             }
             .disabled(isConnecting)
@@ -402,9 +447,8 @@ struct SyncPlayModalView: View {
                                 .frame(height: 38)
                         }
                     }
-                    .foregroundStyle(isEmpty ? AudiaTheme.textSecondary : AudiaTheme.textPrimary)
-                    .background(settings.accentColor.opacity(isEmpty ? 0.08 : 0.22))
-                    .overlay(Capsule().stroke(settings.accentColor.opacity(isEmpty ? 0.15 : 0.45), lineWidth: 1))
+                    .foregroundStyle(isEmpty ? AudiaTheme.textSecondary : ctaForeground)
+                    .background(isEmpty ? Color.primary.opacity(0.08) : effectiveAccent)
                     .clipShape(Capsule())
                 }
                 .disabled(isConnecting || roomCodeInput.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -492,16 +536,22 @@ struct SyncPlayModalView: View {
         }
 
         if syncPlay.isHost {
-            Toggle("Guest controls", isOn: Binding(
-                get: { session.settings.guestControlAllowed },
-                set: { newVal in
-                    var updated = session.settings
-                    updated.guestControlAllowed = newVal
-                    syncPlay.updateSettings(updated)
-                }
-            ))
-            .font(.satoshi(.subheadline))
-            .tint(settings.accentColor)
+            HStack {
+                Text("Guest controls")
+                    .font(.satoshi(.subheadline, weight: .medium))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { session.settings.guestControlAllowed },
+                    set: { newVal in
+                        var updated = session.settings
+                        updated.guestControlAllowed = newVal
+                        syncPlay.updateSettings(updated)
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(.amoled)
+            }
         }
 
         Button {

@@ -74,8 +74,13 @@ struct TabHeaderView: View {
 
     private var actionButtonsRow: some View {
         HStack(spacing: 8) {
-            if let onSearch {
-                glassCircleButton(systemName: "magnifyingglass", size: 17, label: "Search", action: onSearch)
+            glassCircleButton(systemName: "magnifyingglass", size: 17, label: "Search") {
+                Haptics.light()
+                if let onSearch {
+                    onSearch()
+                } else {
+                    AppRouter.shared.open(.search)
+                }
             }
 
             if let onHistory {
@@ -84,10 +89,6 @@ struct TabHeaderView: View {
 
             if let onAdd {
                 glassCircleButton(systemName: "plus", size: 18, label: "Add playlist", action: onAdd)
-            }
-
-            if showListenTogether {
-                listenTogetherButton
             }
 
             glassCircleButton(systemName: "gearshape.fill", size: 17, label: "Settings", action: onAccount)

@@ -33,7 +33,7 @@ struct PlayerMenuSheet: View {
     @ObservedObject private var downloadManager = DownloadManager.shared
 
     var body: some View {
-        SheetChrome(detents: [.height(370)]) {
+        SheetChrome(detents: [.height(390)]) {
             Group {
                 // Top 3 action boxes: Save, Download, Share
                 topActionBoxes
@@ -86,9 +86,6 @@ struct PlayerMenuSheet: View {
                         }
                     }
                 }
-
-                // Music volume slider at the bottom
-                volumeCard
             }
             .navigationDestination(for: Destination.self) { dest in
                 switch dest {
@@ -844,7 +841,7 @@ private struct ModernVolumeSlider: View {
     }
 }
 
-private struct SystemVolumeSlider: UIViewRepresentable {
+struct SystemVolumeSlider: UIViewRepresentable {
     @ObservedObject var volumeObserver: SystemVolumeObserver
 
     func makeUIView(context: Context) -> CustomMPVolumeView {

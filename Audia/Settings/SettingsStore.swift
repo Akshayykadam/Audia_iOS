@@ -418,7 +418,7 @@ final class SettingsStore {
         audioNormalization = Self.load(Keys.audioNormalization, default: false)
         gaplessPlayback = Self.load(Keys.gaplessPlayback, default: true)
         autoplaySimilar = Self.load(Keys.autoplaySimilar, default: true)
-        persistQueue = Self.load(Keys.persistQueue, default: false)
+        persistQueue = Self.load(Keys.persistQueue, default: true)
         lastRadioStyle = Self.loadEnum(Keys.lastRadioStyle, default: .similar)
         lastRadioLimit = Self.load(Keys.lastRadioLimit, default: 25)
         lastRadioAllowExplicit = Self.load(Keys.lastRadioAllowExplicit, default: true)

@@ -6,6 +6,9 @@
 import SwiftUI
 
 struct SearchView: View {
+    var isPushed: Bool = false
+
+    @Environment(\.dismiss) private var dismiss
     @Environment(SettingsStore.self) private var settings
     @State private var viewModel = SearchViewModel()
     @ObservedObject private var router = AppRouter.shared
@@ -16,55 +19,75 @@ struct SearchView: View {
     @State private var importLink = ""
 
     var body: some View {
-        NavigationStack(path: $router.searchPath) {
-            ZStack(alignment: .top) {
-                content
-                    .contentMargins(.top, PlaylistLinkParser.parse(viewModel.fieldText) != nil ? 124 : 62, for: .scrollContent)
+        if isPushed {
+            searchBody
+        } else {
+            NavigationStack(path: $router.searchPath) {
+                searchBody
+                    .detailRouteDestinations()
+            }
+        }
+    }
 
-                VStack(spacing: 0) {
-                    searchTopBar
+    private var searchBody: some View {
+        ZStack(alignment: .top) {
+            content
+                .contentMargins(.top, PlaylistLinkParser.parse(viewModel.fieldText) != nil ? 124 : 62, for: .scrollContent)
 
-                    if let linkType = PlaylistLinkParser.parse(viewModel.fieldText) {
-                        importBanner(for: linkType)
-                    }
+            VStack(spacing: 0) {
+                searchTopBar
+
+                if let linkType = PlaylistLinkParser.parse(viewModel.fieldText) {
+                    importBanner(for: linkType)
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .top)
-            .toolbar(.hidden, for: .navigationBar)
-            .detailRouteDestinations()
-            .overlay {
-                if showImportDialog {
-                    CreatePlaylistDialog(
-                        isPresented: $showImportDialog,
-                        prefilledLink: importLink,
-                        initialTab: .importLink,
-                        onCreated: { }
-                    )
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-                }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .toolbar(.hidden, for: .navigationBar)
+        .overlay {
+            if showImportDialog {
+                CreatePlaylistDialog(
+                    isPresented: $showImportDialog,
+                    prefilledLink: importLink,
+                    initialTab: .importLink,
+                    onCreated: { }
+                )
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showImportDialog)
-            .audiaScreenBackground()
-            .onChange(of: pendingRoute) { _, route in
-                if let route {
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showImportDialog)
+        .audiaScreenBackground()
+        .onChange(of: pendingRoute) { _, route in
+            if let route {
+                if isPushed {
+                    router.open(route)
+                } else {
                     router.searchPath.append(route)
-                    pendingRoute = nil
                 }
+                pendingRoute = nil
             }
-            .onAppear {
-                viewModel.loadSearchHistory()
+        }
+        .onAppear {
+            viewModel.loadSearchHistory()
+            if isPushed {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    fieldFocused = true
+                }
+            } else {
                 focusIfSearchTab()
             }
-            .onChange(of: router.selectedTabIndex) { _, _ in
+        }
+        .onChange(of: router.selectedTabIndex) { _, _ in
+            if !isPushed {
                 focusIfSearchTab()
             }
-            .task(id: viewModel.results.count) {
-                let urls = viewModel.results
-                    .flatMap(\.items)
-                    .compactMap(\.thumbnailUrl)
-                    .compactMap(URL.init)
-                await ImagePreloader.shared.preload(urls)
-            }
+        }
+        .task(id: viewModel.results.count) {
+            let urls = viewModel.results
+                .flatMap(\.items)
+                .compactMap(\.thumbnailUrl)
+                .compactMap(URL.init)
+            await ImagePreloader.shared.preload(urls)
         }
     }
 
@@ -74,9 +97,12 @@ struct SearchView: View {
     private var searchTopBar: some View {
         HStack(spacing: 10) {
             Button {
+                Haptics.light()
                 fieldFocused = false
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                if !router.searchPath.isEmpty {
+                if isPushed {
+                    dismiss()
+                } else if !router.searchPath.isEmpty {
                     router.searchPath.removeLast()
                 } else if !viewModel.fieldText.isEmpty {
                     viewModel.fieldText = ""

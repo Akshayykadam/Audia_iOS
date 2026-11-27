@@ -69,7 +69,9 @@ final class HistoryView {
             .compactMap { day -> (String, [DatabaseService.HistoryEntry])? in
                 guard let dayEntries = grouped[day], !dayEntries.isEmpty else { return nil }
                 let sorted = dayEntries.sorted { $0.event.timestamp > $1.event.timestamp }
-                return (title(for: day), sorted)
+                var seenSongIds = Set<String>()
+                let deduped = sorted.filter { seenSongIds.insert($0.event.songId).inserted }
+                return (title(for: day), deduped)
             }
     }
 

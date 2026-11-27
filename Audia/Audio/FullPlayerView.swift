@@ -64,10 +64,47 @@ struct FullPlayerView: View {
                 ? min(40, (collapseOffset / 24) * 40)
                 : 0
 
-            ZStack {
+            let isImmersiveArtwork = !showLyrics && !showQueue && !(!settings.audioOnlyMode && np.isVideoMode && np.hasVideo)
+
+            ZStack(alignment: .top) {
                 AudiaTheme.background
 
                 LyricsAmbientBackgroundView(colorScheme: colorScheme)
+
+                if isImmersiveArtwork {
+                    let totalH = geometry.size.height + geometry.safeAreaInsets.top + geometry.safeAreaInsets.bottom
+                    artwork
+                        .frame(
+                            width: geometry.size.width,
+                            height: totalH * 0.64
+                        )
+                        .clipped()
+                        .mask(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black, location: 0.0),
+                                    .init(color: .black, location: 0.68),
+                                    .init(color: .clear, location: 1.0)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .overlay(alignment: .top) {
+                            LinearGradient(
+                                colors: [
+                                    Color.black.opacity(colorScheme == .dark ? 0.35 : 0.14),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: geometry.safeAreaInsets.top + 64)
+                            .allowsHitTesting(false)
+                        }
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
 
                 VStack(spacing: 0) {
                     if !settings.audioOnlyMode && np.isVideoMode && np.hasVideo {
@@ -139,41 +176,18 @@ struct FullPlayerView: View {
 
     private var topBar: some View {
         HStack {
-            HStack(spacing: 8) {
-                Button(action: {
-                    Haptics.light()
-                    onCollapse()
-                }) {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundStyle(AudiaTheme.textPrimary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Circle())
-                        .audiaGlassCircle(isActive: false)
-                }
-                .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
-
-                let isSyncActive = SyncPlayManager.shared.session != nil
-                Button {
-                    Haptics.light()
-                    SyncPlayManager.shared.isModalPresented = true
-                } label: {
-                    Image(systemName: "person.2.wave.2.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(isSyncActive ? Color.green : AudiaTheme.textPrimary)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Circle())
-                        .audiaGlassCircle(isActive: false)
-                }
-                .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
-                .accessibilityLabel("Listen Together")
+            Button(action: {
+                Haptics.light()
+                onCollapse()
+            }) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
+                    .audiaGlassCircle(isActive: false)
             }
-
-            Spacer()
-
-            Text("Now Playing")
-                .font(.satoshi(size: 17, weight: .bold))
-                .foregroundStyle(AudiaTheme.textPrimary)
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
 
             Spacer()
 
@@ -230,7 +244,6 @@ struct FullPlayerView: View {
 
     @ViewBuilder
     private func mainPlayerLayout(geometry: GeometryProxy, horizontalPadding: CGFloat, isCompact: Bool) -> some View {
-        let artSize = min(geometry.size.width - 56, isCompact ? 280 : 340)
         let heroLayout = showLyrics
             ? AnyLayout(HStackLayout(alignment: .center, spacing: 12))
             : AnyLayout(VStackLayout(alignment: .center, spacing: 12))
@@ -241,30 +254,23 @@ struct FullPlayerView: View {
         }
 
         heroLayout {
-            artwork
-                .frame(
-                    width: showLyrics ? 54 : artSize,
-                    height: showLyrics ? 54 : artSize
-                )
-                .clipShape(RoundedRectangle(cornerRadius: showLyrics ? 10 : 24, style: .continuous))
-                .shadow(
-                    color: Color.black.opacity(showLyrics ? 0.35 : (colorScheme == .dark ? 0.6 : 0.15)),
-                    radius: showLyrics ? 8 : 18,
-                    y: showLyrics ? 4 : 8
-                )
-                .frame(
-                    maxWidth: showLyrics ? nil : .infinity,
-                    maxHeight: showLyrics ? nil : .infinity,
-                    alignment: .center
-                )
-                .onTapGesture {
-                    if showLyrics {
+            if showLyrics {
+                artwork
+                    .frame(width: 54, height: 54)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.35), radius: 8, y: 4)
+                    .onTapGesture {
                         Haptics.light()
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
                             showLyrics = false
                         }
                     }
-                }
+            } else {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(artworkSwipe)
+            }
 
             titleAndActionsRow
                 .padding(.horizontal, showLyrics ? 0 : horizontalPadding)
@@ -276,7 +282,7 @@ struct FullPlayerView: View {
         }
         .padding(.horizontal, showLyrics ? 16 : 0)
         .padding(.top, showLyrics ? 1 : 0)
-        .padding(.bottom, showLyrics ? 4 : (isCompact ? 12 : 20))
+        .padding(.bottom, showLyrics ? 4 : (isCompact ? 14 : 24))
 
         if showLyrics {
             LyricsScrollSection(
@@ -289,9 +295,15 @@ struct FullPlayerView: View {
         }
 
         FullPlayerProgressSlider(horizontalPadding: horizontalPadding)
-            .padding(.bottom, isCompact ? 8 : 16)
+            .padding(.bottom, isCompact ? 14 : 24)
 
         playbackControls(isCompact: isCompact)
+
+        if !showLyrics {
+            FullPlayerVolumeSlider()
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, isCompact ? 14 : 22)
+        }
     }
 
     private var lyricsHeaderButtons: some View {
@@ -415,7 +427,7 @@ private struct LyricsAmbientBackgroundView: View {
             }
         )
         .scaleEffect(isCompact ? 0.94 : 1)
-        .padding(.bottom, isCompact ? 10 : 28)
+        .padding(.bottom, isCompact ? 22 : 36)
     }
 
     // MARK: - Gestures
@@ -475,43 +487,45 @@ private struct LyricsAmbientBackgroundView: View {
     // MARK: - Player Content
 
     private var titleAndActionsRow: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: showLyrics ? 2 : 4) {
-                Text(np.title)
-                    .font(.system(size: showLyrics ? 17.5 : 22, weight: .bold, design: .rounded))
-                    .foregroundColor(AudiaTheme.textPrimary)
+        VStack(alignment: .leading, spacing: showLyrics ? 2 : 4) {
+            HStack(alignment: .center, spacing: 12) {
+                MarqueeText(
+                    text: np.title,
+                    font: .system(size: showLyrics ? 17.5 : 22, weight: .bold, design: .rounded),
+                    frameHeight: showLyrics ? 24 : 28,
+                    textColor: AudiaTheme.textPrimary
+                )
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+
+                if !showLyrics {
+                    Button {
+                        Haptics.success()
+                        guard let song = currentSongItem else { return }
+                        Task { await likeStore.toggle(song: song) }
+                    } label: {
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                            .font(.satoshi(size: 22, weight: .medium))
+                            .foregroundStyle(isLiked ? AudiaTheme.primary : AudiaTheme.textSecondary)
+                            .contentTransition(.symbolEffect(.replace))
+                            .frame(width: 36, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.82))
+                    .accessibilityLabel("Like")
+                    .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                }
+            }
+
+            Button(action: handleArtistTap) {
+                Text(np.displayArtist)
+                    .font(.system(size: showLyrics ? 14.5 : 15, weight: .medium, design: .rounded))
+                    .foregroundColor(AudiaTheme.textSecondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
-
-                Button(action: handleArtistTap) {
-                    Text(np.displayArtist)
-                        .font(.system(size: showLyrics ? 14.5 : 15, weight: .medium, design: .rounded))
-                        .foregroundColor(AudiaTheme.textSecondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(ArtistTapButtonStyle())
-                .disabled(isResolvingArtist || np.displayArtist.isEmpty)
+                    .contentShape(Rectangle())
             }
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-
-            if !showLyrics {
-                Button {
-                    Haptics.success()
-                    guard let song = currentSongItem else { return }
-                    Task { await likeStore.toggle(song: song) }
-                } label: {
-                    Image(systemName: isLiked ? "heart.fill" : "heart")
-                        .font(.satoshi(size: 22, weight: .medium))
-                        .foregroundStyle(isLiked ? AudiaTheme.primary : AudiaTheme.textSecondary)
-                        .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 40, height: 40)
-                }
-                .buttonStyle(BouncyScaleButtonStyle(scale: 0.82))
-                .accessibilityLabel("Like")
-                .transition(.opacity.combined(with: .scale(scale: 0.85)))
-            }
+            .buttonStyle(ArtistTapButtonStyle())
+            .disabled(isResolvingArtist || np.displayArtist.isEmpty)
         }
     }
 
@@ -753,5 +767,81 @@ private struct ArtistTapButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .opacity(configuration.isPressed ? 0.5 : 1.0)
+    }
+}
+
+private struct FullPlayerVolumeSlider: View {
+    @StateObject private var volumeObserver = SystemVolumeObserver()
+    @State private var isDragging = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button {
+                Haptics.light()
+                volumeObserver.toggleMute()
+            } label: {
+                Image(systemName: volumeObserver.volume < 0.01 ? "speaker.slash.fill" : "speaker.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AudiaTheme.textSecondary)
+                    .frame(width: 20, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mute")
+
+            GeometryReader { geo in
+                let width = max(1, geo.size.width)
+                let clamped = CGFloat(max(0, min(1, volumeObserver.volume)))
+                let trackHeight: CGFloat = isDragging ? 9 : 6
+
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(AudiaTheme.textPrimary.opacity(0.18))
+                        .frame(height: trackHeight)
+
+                    Capsule()
+                        .fill(AudiaTheme.textPrimary.opacity(isDragging ? 0.95 : 0.72))
+                        .frame(width: max(trackHeight, clamped * width), height: trackHeight)
+                }
+                .frame(height: geo.size.height, alignment: .center)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if !isDragging {
+                                isDragging = true
+                                Haptics.selection()
+                            }
+                            let next = Float(max(0, min(1, value.location.x / width)))
+                            volumeObserver.setVolume(next)
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                        }
+                )
+            }
+            .frame(height: 24)
+            .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isDragging)
+            .background(
+                SystemVolumeSlider(volumeObserver: volumeObserver)
+                    .frame(width: 1, height: 1)
+                    .opacity(0.001)
+                    .allowsHitTesting(false)
+            )
+            .accessibilityLabel("Volume")
+
+            Button {
+                Haptics.light()
+                volumeObserver.setVolume(min(1, volumeObserver.volume + 0.1))
+            } label: {
+                Image(systemName: "speaker.wave.3.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AudiaTheme.textSecondary)
+                    .frame(width: 20, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Increase volume")
+        }
     }
 }

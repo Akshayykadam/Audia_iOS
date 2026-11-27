@@ -7,54 +7,57 @@ import UIKit
 
 @MainActor
 enum Haptics {
-    private static let lightGenerator = UIImpactFeedbackGenerator(style: .light)
     private static let mediumGenerator = UIImpactFeedbackGenerator(style: .medium)
-    private static let softGenerator = UIImpactFeedbackGenerator(style: .soft)
+    private static let heavyGenerator = UIImpactFeedbackGenerator(style: .heavy)
     private static let rigidGenerator = UIImpactFeedbackGenerator(style: .rigid)
-    private static let selectionGenerator = UISelectionFeedbackGenerator()
     private static let notificationGenerator = UINotificationFeedbackGenerator()
 
     static func light() {
-        lightGenerator.prepare()
-        lightGenerator.impactOccurred()
+        mediumGenerator.prepare()
+        mediumGenerator.impactOccurred(intensity: 0.75)
     }
 
     static func medium() {
-        mediumGenerator.prepare()
-        mediumGenerator.impactOccurred()
+        heavyGenerator.prepare()
+        heavyGenerator.impactOccurred(intensity: 0.9)
+    }
+
+    static func heavy() {
+        heavyGenerator.prepare()
+        heavyGenerator.impactOccurred(intensity: 1.0)
     }
 
     static func soft() {
-        softGenerator.prepare()
-        softGenerator.impactOccurred()
+        mediumGenerator.prepare()
+        mediumGenerator.impactOccurred(intensity: 0.65)
     }
 
     static func rigid() {
         rigidGenerator.prepare()
-        rigidGenerator.impactOccurred()
+        rigidGenerator.impactOccurred(intensity: 1.0)
     }
 
     /// Tactile feedback for tapping a song to start playback.
     static func playTrack() {
-        mediumGenerator.prepare()
-        mediumGenerator.impactOccurred(intensity: 0.85)
+        heavyGenerator.prepare()
+        heavyGenerator.impactOccurred(intensity: 1.0)
     }
 
     /// Crisp feedback when skipping/swiping to another track.
     static func trackChanged() {
         rigidGenerator.prepare()
-        rigidGenerator.impactOccurred(intensity: 0.75)
+        rigidGenerator.impactOccurred(intensity: 1.0)
     }
 
     /// Distinct feedback when toggling/cycling playback modes.
     static func toggle() {
-        softGenerator.prepare()
-        softGenerator.impactOccurred(intensity: 0.9)
+        rigidGenerator.prepare()
+        rigidGenerator.impactOccurred(intensity: 0.95)
     }
 
     static func selection() {
-        selectionGenerator.prepare()
-        selectionGenerator.selectionChanged()
+        rigidGenerator.prepare()
+        rigidGenerator.impactOccurred(intensity: 0.65)
     }
 
     static func success() {

@@ -77,20 +77,15 @@ struct PlayerPlayPauseButton: View {
             Haptics.medium()
             action()
         }) {
-            ZStack {
-                Circle()
-                    .fill(AudiaTheme.primary)
-                    .frame(width: 64, height: 64)
-                    .shadow(color: Color.black.opacity(0.2), radius: 8, y: 3)
-
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    .font(.satoshi(size: 26, weight: .bold))
-                    .foregroundStyle(AudiaTheme.onPrimary)
-                    .contentTransition(.symbolEffect(.replace))
-            }
+            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                .font(.system(size: 38, weight: .bold))
+                .foregroundStyle(AudiaTheme.textPrimary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 64, height: 64)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
-        .frame(width: 72, height: 72)
+        .buttonStyle(BouncyScaleButtonStyle(scale: 0.88))
+        .frame(width: 56, height: 48)
         .accessibilityLabel(isPlaying ? "Pause" : "Play")
     }
 }
@@ -127,10 +122,11 @@ struct PlaybackControlsRow: View {
                 Haptics.trackChanged()
                 onPrevious()
             }) {
-                Image(systemName: "backward.end.fill")
-                    .font(.satoshi(size: 22, weight: .semibold))
+                Image(systemName: "backward.fill")
+                    .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 48, height: 48)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.85))
             .disabled(!hasPrevious)
@@ -145,10 +141,11 @@ struct PlaybackControlsRow: View {
                 Haptics.trackChanged()
                 onNext()
             }) {
-                Image(systemName: "forward.end.fill")
-                    .font(.satoshi(size: 22, weight: .semibold))
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(AudiaTheme.textPrimary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 48, height: 48)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(BouncyScaleButtonStyle(scale: 0.85))
             .disabled(!hasNext)

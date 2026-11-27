@@ -35,8 +35,10 @@ actor ImagePreloader {
 
         var fresh: [URL] = []
         fresh.reserveCapacity(min(urls.count, Self.maxPreloadBatch))
-        for url in urls {
+        for rawUrl in urls {
             guard fresh.count < Self.maxPreloadBatch else { break }
+            let upgradedString = Self.upgradeURL(rawUrl.absoluteString)
+            guard let url = URL(string: upgradedString) else { continue }
             guard !seen.contains(url), !pendingSet.contains(url) else { continue }
             fresh.append(url)
             pendingSet.insert(url)
@@ -55,6 +57,13 @@ actor ImagePreloader {
 
     func append(_ urls: [URL]) {
         preload(urls)
+    }
+
+    private static func upgradeURL(_ raw: String) -> String {
+        if let sd = ArtworkURLs.sdVariant(raw) {
+            return sd
+        }
+        return ArtworkURLs.sized(raw, width: 720, height: 720) ?? raw
     }
 
     private func markSeen(_ url: URL) {

@@ -543,9 +543,18 @@ extension DownloadManager {
     }
 
     private func prefetchArtwork(from thumbnailUrl: String?) async -> Data? {
-        guard let thumbUrl = thumbnailUrl, let url = URL(string: thumbUrl) else { return nil }
-        guard let image = try? await ArtworkLoader.image(for: url) else { return nil }
-        return image.jpegData(compressionQuality: 0.9)
+        let candidates = [
+            ArtworkURLs.highRes(thumbnailUrl).flatMap { ArtworkURLs.maxResVariant($0) },
+            ArtworkURLs.highRes(thumbnailUrl),
+            thumbnailUrl
+        ].compactMap { $0 }.compactMap(URL.init(string:))
+
+        for url in candidates {
+            if let image = try? await ArtworkLoader.image(for: url) {
+                return image.jpegData(compressionQuality: 0.92)
+            }
+        }
+        return nil
     }
 
     // MARK: - File Transfer (ffmpeg)

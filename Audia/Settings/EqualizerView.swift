@@ -89,7 +89,8 @@ struct EqualizerView: View {
             .accessibilityLabel("Reset Equalizer")
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.top, isSheet ? 16 : 8)
+        .padding(.bottom, 8)
         .background(alignment: .top) {
             if !isSheet {
                 LinearGradient(
@@ -121,14 +122,11 @@ struct EqualizerView: View {
 
                         equalizerCard(settings: settings)
                             .padding(.horizontal, 16)
-
-                        controlsCard(settings: settings)
-                            .padding(.horizontal, 16)
                     }
                     .padding(.top, 4)
                     .padding(.bottom, 12)
                 }
-                .contentMargins(.top, 56, for: .scrollContent)
+                .contentMargins(.top, 68, for: .scrollContent)
             } else {
                 ScrollView {
                     VStack(spacing: 16) {

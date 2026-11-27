@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct HistoryScreenView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(SettingsStore.self) private var settings
     @State private var viewModel = HistoryView()
     @State private var isSelecting = false
@@ -40,45 +41,77 @@ struct HistoryScreenView: View {
     }
 
     var body: some View {
-        Group {
-            if viewModel.isLoading {
-                LoadingStateView("Loading history...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                localHistoryContent
+        ZStack(alignment: .top) {
+            Group {
+                if viewModel.isLoading {
+                    LoadingStateView("Loading history...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    localHistoryContent
+                }
             }
+
+            customTopBar
         }
-        .navigationTitle("History")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            toolbarContent
-        }
-        .navigationBarBackButtonHidden(isSelecting)
+        .audiaScreenBackground()
+        .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
     }
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        if !displayableSections.isEmpty {
-            if isSelecting {
-                ToolbarItem(placement: .navigationBarLeading) {
+    private var customTopBar: some View {
+        HStack(spacing: 10) {
+            Button {
+                Haptics.light()
+                if isSelecting {
+                    isSelecting = false
+                    selectedEvents.removeAll()
+                } else {
+                    dismiss()
+                }
+            } label: {
+                Image(systemName: isSelecting ? "xmark" : "chevron.left")
+                    .font(.satoshi(size: 16, weight: .semibold))
+                    .foregroundStyle(AudiaTheme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
+                    .audiaGlassCircle()
+            }
+            .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
+            .accessibilityLabel(isSelecting ? "Cancel selection" : "Back")
+
+            Text(isSelecting ? "\(selectedEvents.count) selected" : "History")
+                .font(.satoshi(size: 20, weight: .bold))
+                .foregroundStyle(AudiaTheme.textPrimary)
+                .lineLimit(1)
+                .padding(.horizontal, 16)
+                .frame(height: 40)
+                .audiaGlassCapsule(isInteractive: false)
+
+            Spacer()
+
+            if !displayableSections.isEmpty {
+                if isSelecting {
                     Button {
-                        isSelecting = false
-                        selectedEvents.removeAll()
+                        Haptics.selection()
+                        if selectedEvents.count == allEvents.count {
+                            selectedEvents.removeAll()
+                        } else {
+                            selectedEvents = Set(allEvents)
+                        }
                     } label: {
-                        Image(systemName: "xmark")
+                        Text(selectedEvents.count == allEvents.count ? "Deselect All" : "Select All")
+                            .font(.satoshi(size: 14, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
+                            .padding(.horizontal, 14)
+                            .frame(height: 40)
+                            .contentShape(Capsule())
+                            .audiaGlassCapsule()
                     }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if selectedEvents.count == allEvents.count {
-                        Button("Deselect All") { selectedEvents.removeAll() }
-                    } else {
-                        Button("Select All") { selectedEvents = Set(allEvents) }
-                    }
-                }
-                if !selectedEvents.isEmpty {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.94))
+
+                    if !selectedEvents.isEmpty {
                         Button(role: .destructive) {
+                            Haptics.medium()
                             Task {
                                 await viewModel.deleteEvents(Array(selectedEvents))
                                 selectedEvents.removeAll()
@@ -86,14 +119,48 @@ struct HistoryScreenView: View {
                             }
                         } label: {
                             Image(systemName: "trash")
+                                .font(.satoshi(size: 15, weight: .semibold))
+                                .foregroundStyle(.red)
+                                .frame(width: 40, height: 40)
+                                .contentShape(Circle())
+                                .audiaGlassCircle()
                         }
+                        .buttonStyle(BouncyScaleButtonStyle(scale: 0.9))
+                        .accessibilityLabel("Delete selected")
                     }
-                }
-            } else {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Select") { isSelecting = true }
+                } else {
+                    Button {
+                        Haptics.light()
+                        isSelecting = true
+                    } label: {
+                        Text("Select")
+                            .font(.satoshi(size: 14, weight: .semibold))
+                            .foregroundStyle(AudiaTheme.textPrimary)
+                            .padding(.horizontal, 14)
+                            .frame(height: 40)
+                            .contentShape(Capsule())
+                            .audiaGlassCapsule()
+                    }
+                    .buttonStyle(BouncyScaleButtonStyle(scale: 0.94))
                 }
             }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(alignment: .top) {
+            LinearGradient(
+                stops: [
+                    .init(color: AudiaTheme.background, location: 0.0),
+                    .init(color: AudiaTheme.background.opacity(0.92), location: 0.48),
+                    .init(color: AudiaTheme.background.opacity(0.55), location: 0.78),
+                    .init(color: AudiaTheme.background.opacity(0), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 135)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
         }
     }
 
@@ -134,6 +201,8 @@ struct HistoryScreenView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .contentMargins(.top, 56, for: .scrollContent)
         .appListBottomClearance()
         .miniPlayerTracksScroll()
     }

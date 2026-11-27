@@ -43,12 +43,12 @@ struct MiniPlayerBarView: View {
 
     private var barHeight: CGFloat {
         if isCompactInline { return 48 }
-        return isAccessory ? 52 : 72
+        return isAccessory ? 52 : 58
     }
 
     private var artworkSize: CGFloat {
         if isCompactInline { return 34 }
-        return isAccessory ? 38 : 54
+        return isAccessory ? 38 : 42
     }
 
     private var titleColor: Color {
@@ -62,13 +62,13 @@ struct MiniPlayerBarView: View {
     var body: some View {
         let content = HStack(spacing: 0) {
             pagingArea
-            HStack(spacing: isCompactInline ? 8 : 14) {
+            HStack(spacing: isCompactInline ? 4 : 6) {
                 playPauseButton
                 if !isCompactInline {
                     nextButton
                 }
             }
-            .padding(.trailing, isCompactInline ? 10 : 16)
+            .padding(.trailing, isCompactInline ? 10 : 12)
         }
         .frame(height: barHeight)
         .frame(maxWidth: .infinity)
@@ -135,41 +135,41 @@ struct MiniPlayerBarView: View {
     }
 
     private func page(for song: SongItem, width: CGFloat) -> some View {
-        HStack(spacing: isAccessory ? 10 : 12) {
-            barArtwork(for: song.videoId)
+        HStack(spacing: 10) {
+            barArtwork(for: song.videoId, thumbnailUrl: song.thumbnailUrl)
 
-            VStack(alignment: .leading, spacing: isAccessory ? 1 : 3) {
+            VStack(alignment: .leading, spacing: 1) {
                 if isInline {
                     Text(song.title)
-                        .font(.satoshi(size: isAccessory ? 14 : 16, weight: .semibold))
+                        .font(.satoshi(size: 15, weight: .semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(titleColor)
                 } else {
                     MarqueeText(
                         text: song.title,
-                        font: .satoshi(size: isAccessory ? 15 : 16, weight: .semibold),
-                        frameHeight: isAccessory ? 20 : 24,
+                        font: .satoshi(size: 15, weight: .semibold),
+                        frameHeight: 20,
                         textColor: titleColor
                     )
                 }
 
                 Text(artistLine(for: song))
-                    .font(.satoshi(size: isAccessory ? 12 : 14, weight: .medium))
+                    .font(.satoshi(size: 13, weight: .medium))
                     .foregroundStyle(artistColor)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, isAccessory ? 8 : 10)
-        .padding(.trailing, isAccessory ? 10 : 14)
+        .padding(.leading, 8)
+        .padding(.trailing, 10)
         .frame(width: width, alignment: .leading)
         .contentShape(Rectangle())
     }
 
     @ViewBuilder
-    private func barArtwork(for videoId: String) -> some View {
+    private func barArtwork(for videoId: String, thumbnailUrl: String? = nil) -> some View {
         let isCurrent = videoId == np.videoId
         ZStack {
             if isCurrent, let uiImage = np.thumbnailUIImage {
@@ -177,7 +177,7 @@ struct MiniPlayerBarView: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                MiniArtworkView(videoId: videoId)
+                MiniArtworkView(videoId: videoId, thumbnailUrl: thumbnailUrl)
             }
         }
         .frame(width: artworkSize, height: artworkSize)
@@ -189,18 +189,14 @@ struct MiniPlayerBarView: View {
             Haptics.medium()
             player.togglePlayPause()
         }) {
-            ZStack {
-                Circle()
-                    .fill(effectiveColorScheme == .dark ? Color.white : Color.black)
-                    .frame(width: isCompactInline ? 30 : (isAccessory ? 36 : 44), height: isCompactInline ? 30 : (isAccessory ? 36 : 44))
-                Image(systemName: np.isPlaying ? "pause.fill" : "play.fill")
-                    .contentTransition(.symbolEffect(.replace))
-                    .font(.satoshi(size: isCompactInline ? 13 : (isAccessory ? 15 : 18), weight: .bold))
-                    .foregroundStyle(effectiveColorScheme == .dark ? Color.black : Color.white)
-            }
-            .contentShape(Circle())
+            Image(systemName: np.isPlaying ? "pause.fill" : "play.fill")
+                .contentTransition(.symbolEffect(.replace))
+                .font(.system(size: isCompactInline ? 15 : (isAccessory ? 17 : 20), weight: .semibold))
+                .foregroundStyle(titleColor)
+                .frame(width: isCompactInline ? 30 : 34, height: isCompactInline ? 30 : 34)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(BouncyScaleButtonStyle(scale: 0.90))
+        .buttonStyle(BouncyScaleButtonStyle(scale: 0.86))
         .accessibilityLabel(np.isPlaying ? "Pause" : "Play")
     }
 
@@ -210,9 +206,9 @@ struct MiniPlayerBarView: View {
             np.playNext()
         }) {
             Image(systemName: "forward.end.fill")
-                .font(.satoshi(size: 19, weight: .semibold))
+                .font(.system(size: isAccessory ? 15 : 17, weight: .semibold))
                 .foregroundStyle(titleColor.opacity(0.85))
-                .frame(width: 36, height: 36)
+                .frame(width: 34, height: 34)
                 .contentShape(Rectangle())
         }
         .buttonStyle(BouncyScaleButtonStyle(scale: 0.86))
@@ -335,6 +331,7 @@ struct MiniPlayerBarView: View {
 @MainActor
 private struct MiniArtworkView: View {
     let videoId: String
+    var thumbnailUrl: String? = nil
 
     @State private var uiImage: UIImage?
 
@@ -355,11 +352,18 @@ private struct MiniArtworkView: View {
     }
 
     private func load() {
+        let preferred = ArtworkURLs.highRes(thumbnailUrl)
+            ?? ArtworkURLs.sdVariant(NowPlaying.artworkURL(for: videoId))
+            ?? NowPlaying.artworkURL(for: videoId)
+        if let url = URL(string: preferred), let cached = ArtworkLoader.cachedImage(for: url) {
+            uiImage = cached.centerCroppedSquare()
+            return
+        }
         if let cached = cachedArtwork(for: videoId) {
             uiImage = cached
             return
         }
-        guard let url = URL(string: NowPlaying.artworkURL(for: videoId)) else { return }
+        guard let url = URL(string: preferred) else { return }
         loggedTask(Log.nowPlaying, "Mini artwork load failed") {
             let image = try await ArtworkLoader.image(for: url)
             let cropped = image.centerCroppedSquare()

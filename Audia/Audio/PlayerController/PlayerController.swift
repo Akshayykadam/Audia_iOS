@@ -280,6 +280,18 @@ extension PlayerController {
            SyncPlayManager.shared.handleUserPlayPauseToggle() {
             return
         }
+        if currentVideoId == nil, let vid = NowPlaying.shared.videoId, !vid.isEmpty {
+            NowPlaying.shared.isPlaying = true
+            Task {
+                do {
+                    try await PlaybackManager.shared.resolveAndPlay(videoId: vid)
+                } catch {
+                    Log.player.error("Failed to resume restored track \(vid): \(error)")
+                    NowPlaying.shared.isPlaying = false
+                }
+            }
+            return
+        }
         setPaused(playState.value == .playing)
     }
 
@@ -328,15 +340,10 @@ extension PlayerController {
                 }
             }
 
-            // 3. Spatial sound (crossfeed / M-S width / subtle room)
+            // 3. Spatial sound (M/S width / crossfeed via pan, supported by MPVKit's libavfilter)
             let spatialFilters = settings.spatialAudioMode.mpvFilters
             if !spatialFilters.isEmpty {
                 filters.append(contentsOf: spatialFilters)
-            }
-
-            // 4. Brickwall safety limiter at -0.45 dBFS to prevent clipping
-            if !filters.isEmpty {
-                filters.append("alimiter=limit=0.95:attack=5:release=100:level=disabled")
             }
 
             return filters.joined(separator: ",")
@@ -346,8 +353,7 @@ extension PlayerController {
             mpv_set_property_string(mpv, "gapless-audio", gapless ? "yes" : "no")
             let result = mpv_set_property_string(mpv, "af", chain.isEmpty ? "" : chain)
             if result < 0 {
-                Log.player.error("Failed to set af chain '\(chain)': mpv error \(result); clearing af")
-                mpv_set_property_string(mpv, "af", "")
+                Log.player.error("Failed to set af chain '\(chain)': mpv error \(result)")
             }
         }
         applyPlayerVolume()

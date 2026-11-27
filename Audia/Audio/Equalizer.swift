@@ -93,20 +93,13 @@ enum SpatialAudioMode: String, CaseIterable, Codable, Sendable, Identifiable {
         case .off:
             return []
         case .natural:
-            return ["crossfeed=strength=0.35:range=0.6"]
+            return ["pan=stereo|c0=0.88*c0+0.12*c1|c1=0.12*c0+0.88*c1"]
         case .wideStereo:
-            return ["stereotools=mlev=1.0:slev=1.35:softclip=1"]
+            return ["pan=stereo|c0=1.00*c0-0.15*c1|c1=-0.15*c0+1.00*c1"]
         case .surround3D:
-            return [
-                "crossfeed=strength=0.3:range=0.55",
-                "stereotools=mlev=1.0:slev=1.25:softclip=1",
-                "aecho=0.8:0.9:14:0.12"
-            ]
+            return ["pan=stereo|c0=1.05*c0-0.22*c1|c1=-0.22*c0+1.05*c1"]
         case .concertHall:
-            return [
-                "stereotools=mlev=0.95:slev=1.45:softclip=1",
-                "aecho=0.8:0.88:28|44:0.18|0.12"
-            ]
+            return ["pan=stereo|c0=1.10*c0-0.28*c1|c1=-0.28*c0+1.10*c1"]
         }
     }
 }

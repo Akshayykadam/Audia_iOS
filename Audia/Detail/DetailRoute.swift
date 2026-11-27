@@ -59,7 +59,7 @@ struct DetailRouteDestinationView: View {
         case .downloads:
             DownloadsView()
         case .search:
-            SearchView()
+            SearchView(isPushed: true)
         case .mood(let mood):
             MoodDetailView(mood: mood)
         }
