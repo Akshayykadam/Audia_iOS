@@ -24,7 +24,8 @@
         "*://music.youtube.com/*",
         "*://www.youtube.com/watch*",
         "*://m.youtube.com/watch*",
-        "*://youtu.be/*"
+        "*://youtu.be/*",
+        "*://audia-music.vercel.app/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],
@@ -35,6 +36,7 @@
     "*://music.youtube.com/*",
     "*://www.youtube.com/*",
     "*://m.youtube.com/*",
-    "*://youtu.be/*"
+    "*://youtu.be/*",
+    "*://audia-music.vercel.app/*"
   ]
 }

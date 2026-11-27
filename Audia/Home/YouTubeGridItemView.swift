@@ -125,7 +125,7 @@ struct YouTubeListItemView: View {
 
                 Spacer()
 
-                if let url = item.webUrl {
+                if let url = item.shareUrl {
                     Button {
                         UIPasteboard.general.string = url
                     } label: {

@@ -403,7 +403,7 @@ struct ArtistDetailView: View {
 
     private func copyArtistLink() {
         guard let artist = viewModel.artist,
-              let url = URL(string: "https://music.youtube.com/channel/\(artist.browseId)") else { return }
+              let url = URL.artistShareURL(id: artist.browseId) else { return }
         UIPasteboard.general.string = url.absoluteString
         linkCopied = true
         linkResetTask?.cancel()

@@ -78,7 +78,7 @@ struct SongMenuSheet: View {
         }
         .confirmationDialog("Share", isPresented: $showShareDialog, titleVisibility: .visible) {
             Button("Copy Link") {
-                UIPasteboard.general.string = song.webUrl
+                UIPasteboard.general.string = URL.songShareURL(videoId: song.videoId)?.absoluteString ?? song.webUrl
                 dismiss()
             }
             Button("Share with Other Apps") {

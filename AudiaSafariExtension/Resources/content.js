@@ -62,7 +62,7 @@
   try {
     const path = window.location.pathname;
     const search = window.location.search;
-    if (path.includes('watch') || search.includes('list=') || path.includes('browse') || path.includes('playlist')) {
+    if (path.includes('watch') || search.includes('list=') || path.includes('browse') || path.includes('playlist') || path.includes('/song/') || path.includes('/album/') || path.includes('/artist/')) {
       const a = document.createElement('a');
       a.href = getAudiaUrl();
       a.style.display = 'none';

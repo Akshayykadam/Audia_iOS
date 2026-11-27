@@ -49,11 +49,11 @@ enum DeepLinkHandler {
                 AppRouter.shared.expandPlayer()
             }
             return true
-        case "play", "track":
+        case "play", "track", "song":
             let videoId = components.queryItems?.first(where: { $0.name == "id" })?.value
                 ?? components.queryItems?.first(where: { $0.name == "v" })?.value
                 ?? url.lastPathComponent
-            if !videoId.isEmpty {
+            if !videoId.isEmpty && videoId != "/" {
                 playVideo(id: videoId)
                 return true
             }
@@ -125,11 +125,37 @@ enum DeepLinkHandler {
         return false
     }
 
-    /// Handles music.youtube.com, youtube.com, youtu.be web URLs
+    /// Handles audia-music.vercel.app, music.youtube.com, youtube.com, youtu.be web URLs
     static func handleWebURL(_ url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
         let host = components.host?.lowercased() ?? ""
         let path = components.path
+
+        // 0. Check if host is Audia web domain (audia-music.vercel.app)
+        if host == "audia-music.vercel.app" || host == "www.audia-music.vercel.app" {
+            let segments = url.pathComponents.filter { $0 != "/" }
+            if segments.count >= 2 {
+                let type = segments[0].lowercased()
+                let id = segments[1]
+                switch type {
+                case "song":
+                    playVideo(id: id)
+                case "album":
+                    AppRouter.shared.open(.album(browseId: id))
+                case "playlist":
+                    AppRouter.shared.open(.playlist(playlistId: id))
+                case "artist":
+                    AppRouter.shared.open(.artist(browseId: id))
+                case "syncplay", "sync":
+                    if let syncUrl = URL(string: "audia://syncplay/\(id)") {
+                        handle(url: syncUrl)
+                    }
+                default:
+                    break
+                }
+            }
+            return
+        }
 
         // Check if host is YouTube / YouTube Music
         let isYouTube = host.contains("youtube.com") || host.contains("youtu.be")

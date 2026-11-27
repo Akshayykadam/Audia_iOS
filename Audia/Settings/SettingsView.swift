@@ -187,13 +187,14 @@ struct SettingsView: View {
                 .id("downloads")
 
                 Section {
+                    SettingsToggleRow("Share Audia Links", icon: "square.and.arrow.up", isOn: $settings.shareAudiaLink)
                     SettingsNavigationRow("Link Opening & Extensions", icon: "arrow.up.forward.app.fill") {
                         SafariExtensionGuideView()
                     }
                 } header: {
-                    sectionHeader("Link Opening")
+                    sectionHeader("Sharing & Links")
                 } footer: {
-                    sectionFooter("Open YouTube Music links directly in Audia from Safari or the iOS Share Sheet.")
+                    sectionFooter("When Share Audia Links is enabled, sharing sends Audia links that open in Audia on iOS and Android instead of YouTube Music links. Downloaded songs still share as audio files.")
                 }
             }
             .scrollContentBackground(.hidden)

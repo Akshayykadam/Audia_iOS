@@ -602,6 +602,28 @@ extension YTItem {
             return nil
         }
     }
+
+    @MainActor
+    var shareUrl: String? {
+        switch self {
+        case .song(let s):
+            return URL.songShareURL(videoId: s.videoId)?.absoluteString ?? s.webUrl
+        case .episode(let e):
+            return URL.songShareURL(videoId: e.videoId)?.absoluteString ?? e.webUrl
+        case .album(let a):
+            if let browseId = a.browseId as String?, !browseId.isEmpty {
+                return URL.albumShareURL(id: browseId)?.absoluteString
+            }
+            guard let pid = a.playlistId else { return nil }
+            return URL.playlistShareURL(id: pid)?.absoluteString
+        case .artist(let a):
+            return URL.artistShareURL(id: a.browseId)?.absoluteString
+        case .playlist(let p):
+            return URL.playlistShareURL(id: p.id)?.absoluteString
+        case .podcast:
+            return nil
+        }
+    }
 }
 
 // MARK: - Convenience Conversions

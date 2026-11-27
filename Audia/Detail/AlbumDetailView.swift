@@ -521,7 +521,7 @@ struct AlbumMoreSheet: View {
     }
 
     private func share() {
-        guard let url = URL(string: "https://music.youtube.com/browse/\(album.browseId)") else { return }
+        guard let url = URL.albumShareURL(id: album.browseId) else { return }
         presentShareSheet(items: [url])
         dismiss()
     }

@@ -118,7 +118,7 @@ struct SongMenuActionsView: View {
             Divider()
 
             Button {
-                UIPasteboard.general.string = song.webUrl
+                UIPasteboard.general.string = URL.songShareURL(videoId: song.videoId)?.absoluteString ?? song.webUrl
             } label: {
                 Label("Copy Link", systemImage: "link")
             }

@@ -144,9 +144,9 @@ func shareSong(
                 thumbnail: thumbnail
             )
             presentShareSheet(items: [itemSource], afterDismiss: dismiss)
-        } else if let webURL = URL(string: song.webUrl) {
+        } else if let shareURL = URL.songShareURL(videoId: song.videoId) {
             let itemSource = SongShareActivityItemSource(
-                url: webURL,
+                url: shareURL,
                 title: displayTitle,
                 thumbnail: thumbnail
             )
@@ -158,11 +158,37 @@ func shareSong(
 }
 
 extension URL {
-    static func playlistShareURL(id: String) -> URL? {
-        URL(string: "https://music.youtube.com/playlist?list=\(id)")
+    private static let audiaWebBase = "https://audia-music.vercel.app"
+
+    @MainActor
+    static func songShareURL(videoId: String) -> URL? {
+        if SettingsStore.shared.shareAudiaLink {
+            return URL(string: "\(audiaWebBase)/song/\(videoId)")
+        }
+        return URL(string: "https://music.youtube.com/watch?v=\(videoId)")
     }
 
+    @MainActor
+    static func playlistShareURL(id: String) -> URL? {
+        if SettingsStore.shared.shareAudiaLink {
+            return URL(string: "\(audiaWebBase)/playlist/\(id)")
+        }
+        return URL(string: "https://music.youtube.com/playlist?list=\(id)")
+    }
+
+    @MainActor
     static func albumShareURL(id: String) -> URL? {
-        URL(string: "https://music.youtube.com/browse/\(id)")
+        if SettingsStore.shared.shareAudiaLink {
+            return URL(string: "\(audiaWebBase)/album/\(id)")
+        }
+        return URL(string: "https://music.youtube.com/browse/\(id)")
+    }
+
+    @MainActor
+    static func artistShareURL(id: String) -> URL? {
+        if SettingsStore.shared.shareAudiaLink {
+            return URL(string: "\(audiaWebBase)/artist/\(id)")
+        }
+        return URL(string: "https://music.youtube.com/channel/\(id)")
     }
 }

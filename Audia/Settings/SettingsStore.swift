@@ -321,6 +321,12 @@ final class SettingsStore {
         didSet { Self.defaults.set(syncPlayServerUrl, forKey: Keys.syncPlayServerUrl) }
     }
 
+    // MARK: - Sharing
+
+    var shareAudiaLink: Bool {
+        didSet { Self.defaults.set(shareAudiaLink, forKey: Keys.shareAudiaLink) }
+    }
+
     // MARK: - Keys
 
     private enum Keys {
@@ -366,6 +372,7 @@ final class SettingsStore {
         static let spotifyClientSecret = "settings.spotifyClientSecret"
         static let syncPlayGuestName = "settings.syncPlayGuestName"
         static let syncPlayServerUrl = "settings.syncPlayServerUrl"
+        static let shareAudiaLink = "settings.shareAudiaLink"
     }
 
     private static let defaults: UserDefaults = .standard
@@ -444,6 +451,7 @@ final class SettingsStore {
         spotifyClientSecret = Self.loadString(Keys.spotifyClientSecret, default: "")
         syncPlayGuestName = Self.loadString(Keys.syncPlayGuestName, default: "")
         syncPlayServerUrl = Self.loadString(Keys.syncPlayServerUrl, default: SyncPlayWebSocketClient.defaultServerUrl)
+        shareAudiaLink = Self.load(Keys.shareAudiaLink, default: false)
         applyEqualizerProfileIfNeeded(for: AudioOutputRoute.current())
     }
 
